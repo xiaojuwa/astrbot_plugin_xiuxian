@@ -72,10 +72,10 @@ CMD_MY_SKILLS = "我的功法"
 
 @register(
     "astrbot_plugin_xiuxian",
-    "oldPeter616",
+    "xiaojuwa",
     "基于astrbot框架的文字修仙游戏",
     "v2.3.0", # 版本号提升 - 功法/buff/奇斗/交易系统
-    "https://github.com/oldPeter616/astrbot_plugin_xiuxian"
+    "https://github.com/xiaojuwa/astrbot_plugin_xiuxian"
 )
 class XiuXianPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):

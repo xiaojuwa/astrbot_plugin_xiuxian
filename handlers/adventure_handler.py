@@ -97,71 +97,78 @@ class AdventureHandler:
     @player_required
     async def handle_adventure(self, player: Player, event: AstrMessageEvent):
         """触发一次奇遇"""
-        today = date.today().isoformat()
-        user_id = player.user_id
+        from astrbot.api import logger
+        try:
+            today = date.today().isoformat()
+            user_id = player.user_id
 
-        # 检查每日次数限制
-        current_count = await self.db.get_daily_adventure_count(user_id, today)
-        if current_count >= self.MAX_DAILY_ADVENTURES:
-            yield event.plain_result(
-                f"道友今日的气运已尽，明日再来探索吧。\n"
-                f"（每日奇遇次数上限：{self.MAX_DAILY_ADVENTURES}次）"
+            # 检查每日次数限制
+            current_count = await self.db.get_daily_adventure_count(user_id, today)
+            if current_count >= self.MAX_DAILY_ADVENTURES:
+                yield event.plain_result(
+                    f"道友今日的气运已尽，明日再来探索吧。\n"
+                    f"（每日奇遇次数上限：{self.MAX_DAILY_ADVENTURES}次）"
+                )
+                return
+
+            # 检查玩家状态
+            if player.state != "空闲":
+                yield event.plain_result(f"道友当前正在「{player.state}」中，无法外出探索奇遇。")
+                return
+
+            # 随机选择奇遇事件
+            adventure = self._select_adventure()
+            rewards = adventure["rewards"]
+
+            # 计算实际奖励（根据玩家境界有加成）
+            level_bonus = 1 + player.level_index * 0.05  # 每个境界5%加成
+            gold_reward = int(random.randint(rewards["gold_min"], rewards["gold_max"]) * level_bonus)
+            exp_reward = int(random.randint(rewards["exp_min"], rewards["exp_max"]) * level_bonus)
+
+            # 更新玩家数据
+            p_clone = player.clone()
+            p_clone.gold += gold_reward
+            p_clone.experience += exp_reward
+            await self.db.update_player(p_clone)
+
+            # 记录奇遇
+            await self.db.increment_adventure_count(user_id, today)
+            await self.db.add_adventure_log(
+                user_id, today, adventure["name"],
+                adventure["description"], gold_reward, exp_reward, time.time()
             )
-            return
 
-        # 检查玩家状态
-        if player.state != "空闲":
-            yield event.plain_result(f"道友当前正在「{player.state}」中，无法外出探索奇遇。")
-            return
+            # 构建响应消息
+            remaining = self.MAX_DAILY_ADVENTURES - current_count - 1
+            rarity_prefix = ""
+            if adventure["name"] in [v["name"] for v in RARE_ADVENTURES.values()]:
+                rarity_prefix = "🌟【稀有奇遇】🌟\n"
 
-        # 随机选择奇遇事件
-        adventure = self._select_adventure()
-        rewards = adventure["rewards"]
+            lines = [
+                f"{rarity_prefix}═══ 【{adventure['name']}】 ═══",
+                "",
+                adventure["description"],
+                "",
+                "--- 获得奖励 ---",
+            ]
 
-        # 计算实际奖励（根据玩家境界有加成）
-        level_bonus = 1 + player.level_index * 0.05  # 每个境界5%加成
-        gold_reward = int(random.randint(rewards["gold_min"], rewards["gold_max"]) * level_bonus)
-        exp_reward = int(random.randint(rewards["exp_min"], rewards["exp_max"]) * level_bonus)
+            if gold_reward > 0:
+                lines.append(f"💰 灵石: +{gold_reward}")
+            if exp_reward > 0:
+                lines.append(f"📈 修为: +{exp_reward}")
 
-        # 更新玩家数据
-        p_clone = player.clone()
-        p_clone.gold += gold_reward
-        p_clone.experience += exp_reward
-        await self.db.update_player(p_clone)
+            lines.extend([
+                "",
+                f"今日剩余奇遇次数: {remaining}/{self.MAX_DAILY_ADVENTURES}",
+                "═══════════════════"
+            ])
 
-        # 记录奇遇
-        await self.db.increment_adventure_count(user_id, today)
-        await self.db.add_adventure_log(
-            user_id, today, adventure["name"],
-            adventure["description"], gold_reward, exp_reward, time.time()
-        )
-
-        # 构建响应消息
-        remaining = self.MAX_DAILY_ADVENTURES - current_count - 1
-        rarity_prefix = ""
-        if adventure["name"] in [v["name"] for v in RARE_ADVENTURES.values()]:
-            rarity_prefix = "🌟【稀有奇遇】🌟\n"
-
-        lines = [
-            f"{rarity_prefix}═══ 【{adventure['name']}】 ═══",
-            "",
-            adventure["description"],
-            "",
-            "--- 获得奖励 ---",
-        ]
-
-        if gold_reward > 0:
-            lines.append(f"💰 灵石: +{gold_reward}")
-        if exp_reward > 0:
-            lines.append(f"📈 修为: +{exp_reward}")
-
-        lines.extend([
-            "",
-            f"今日剩余奇遇次数: {remaining}/{self.MAX_DAILY_ADVENTURES}",
-            "═══════════════════"
-        ])
-
-        yield event.plain_result("\n".join(lines))
+            yield event.plain_result("\n".join(lines))
+        except Exception as e:
+            logger.error(f"奇遇处理异常 - 玩家:{player.user_id}, 错误:{e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            yield event.plain_result(f"奇遇时发生异常，请联系管理员。错误: {str(e)[:80]}")
 
     def _select_adventure(self) -> Dict:
         """根据权重随机选择奇遇事件"""

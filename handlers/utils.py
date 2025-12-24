@@ -25,10 +25,12 @@ def player_required(func: Callable[..., Coroutine[any, any, AsyncGenerator[any, 
     """
     @wraps(func)
     async def wrapper(self, event: AstrMessageEvent, *args, **kwargs):
+        from astrbot.api import logger
         # self 是 Handler 类的实例 (e.g., PlayerHandler)
         try:
             player = await self.db.get_player_by_id(event.get_sender_id())
         except Exception as e:
+            logger.error(f"get_player_by_id异常: {e}")
             yield event.plain_result(f"读取玩家数据时发生错误，请联系管理员。错误: {str(e)[:50]}")
             return
         
@@ -60,7 +62,13 @@ def player_required(func: Callable[..., Coroutine[any, any, AsyncGenerator[any, 
                 return
 
         # 将 player 对象作为第一个参数传递给原始函数
-        async for result in func(self, player, event, *args, **kwargs):
-            yield result
+        try:
+            async for result in func(self, player, event, *args, **kwargs):
+                yield result
+        except Exception as e:
+            logger.error(f"Handler执行异常 - 函数:{func.__name__}, 玩家:{player.user_id}, 错误:{e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            yield event.plain_result(f"执行指令时发生异常，请联系管理员。")
             
     return wrapper
