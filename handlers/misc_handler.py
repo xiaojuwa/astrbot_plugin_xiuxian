@@ -2,68 +2,131 @@
 from astrbot.api.event import AstrMessageEvent
 from ..data import DataBase
 
-CMD_START_XIUXIAN="我要修仙"
-CMD_PLAYER_INFO="我的信息"
-CMD_CHECK_IN="签到"
-CMD_START_CULTIVATION="闭关"
-CMD_END_CULTIVATION="出关"
-CMD_BREAKTHROUGH="突破"
-CMD_REROLL_SPIRIT_ROOT="重入仙途"
-CMD_SHOP="商店"
-CMD_BACKPACK="我的背包"
-CMD_BUY="购买"
-CMD_USE_ITEM="使用"
-CMD_CREATE_SECT="创建宗门"
-CMD_JOIN_SECT="加入宗门"
-CMD_MY_SECT="我的宗门"
-CMD_LEAVE_SECT="退出宗门"
-CMD_SPAR="切磋"
-CMD_BOSS_LIST="查看世界boss"
-CMD_FIGHT_BOSS="讨伐boss"
-CMD_ENTER_REALM="探索秘境"
-CMD_REALM_ADVANCE="前进"
-CMD_LEAVE_REALM="离开秘境"
-CMD_MY_EQUIPMENT="我的装备"
-CMD_UNEQUIP="卸下"
+# 基础指令
+CMD_START_XIUXIAN = "我要修仙"
+CMD_PLAYER_INFO = "我的信息"
+CMD_CHECK_IN = "签到"
+
+# 修炼指令
+CMD_START_CULTIVATION = "闭关"
+CMD_END_CULTIVATION = "出关"
+CMD_BREAKTHROUGH = "突破"
+CMD_REROLL_SPIRIT_ROOT = "重入仙途"
+
+# 商店指令
+CMD_SHOP = "商店"
+CMD_BACKPACK = "我的背包"
+CMD_BUY = "购买"
+CMD_USE_ITEM = "使用"
+CMD_MY_EQUIPMENT = "我的装备"
+CMD_UNEQUIP = "卸下"
+
+# 宗门指令
+CMD_CREATE_SECT = "创建宗门"
+CMD_JOIN_SECT = "加入宗门"
+CMD_MY_SECT = "我的宗门"
+CMD_LEAVE_SECT = "退出宗门"
+
+# 战斗指令
+CMD_SPAR = "切磋"
+CMD_BOSS_LIST = "查看世界boss"
+CMD_FIGHT_BOSS = "讨伐boss"
+CMD_ENTER_REALM = "探索秘境"
+CMD_REALM_ADVANCE = "前进"
+CMD_LEAVE_REALM = "离开秘境"
+
+# 排行榜指令
+CMD_REALM_RANKING = "境界排行"
+CMD_WEALTH_RANKING = "财富排行"
+CMD_COMBAT_RANKING = "战力排行"
+CMD_MY_RANKING = "我的排名"
+
+# 每日任务指令
+CMD_DAILY_TASKS = "每日任务"
+CMD_CLAIM_DAILY_REWARDS = "领取任务奖励"
+
+# 奇遇指令
+CMD_ADVENTURE = "奇遇"
+CMD_ADVENTURE_STATUS = "奇遇状态"
+
+# 天劫指令
+CMD_TRIBULATION_INFO = "天劫信息"
+CMD_CHALLENGE_TRIBULATION = "渡劫"
+
+# 悬赏指令
+CMD_BOUNTY_LIST = "悬赏榜"
+CMD_ACCEPT_BOUNTY = "接取悬赏"
+CMD_BOUNTY_STATUS = "悬赏状态"
 
 __all__ = ["MiscHandler"]
 
+
 class MiscHandler:
-    # 杂项指令处理器
-    
+    """杂项指令处理器"""
+
     def __init__(self, db: DataBase):
         self.db = db
 
     async def handle_help(self, event: AstrMessageEvent):
         help_text = (
-            "--- 寻仙指令手册 ---\n"
-            f"【{CMD_START_XIUXIAN}】: 开启修仙之旅。\n"
-            f"【{CMD_PLAYER_INFO}】: 查看人物信息。\n"
-            f"【{CMD_CHECK_IN}】: 每日签到。\n"
-            "--- 修炼与成长 ---\n"
-            f"【{CMD_START_CULTIVATION}】: 开始闭关。\n"
-            f"【{CMD_END_CULTIVATION}】: 结束闭关。\n"
-            f"【{CMD_BREAKTHROUGH}】: 尝试突破境界。\n"
-            f"【{CMD_REROLL_SPIRIT_ROOT}】: 逆天改命，重置灵根。\n"
-            "--- 坊市与物品 ---\n"
-            f"【{CMD_SHOP}】: 查看坊市当日商品。\n"
-            f"【{CMD_BACKPACK}】: 查看个人背包。\n"
-            f"【{CMD_BUY} <名> [数]】: 购买物品。\n"
-            f"【{CMD_USE_ITEM} <名> [数]】: 使用丹药或穿戴法器。\n"
-            f"【{CMD_MY_EQUIPMENT}】: 查看已穿戴的装备。\n"
-            f"【{CMD_UNEQUIP} <部位>】: 卸下指定部位法器 (武器/防具/饰品)。\n"
-            "--- 宗门社交 ---\n"
-            f"【{CMD_CREATE_SECT} <名>】: 创建宗门。\n"
-            f"【{CMD_JOIN_SECT} <名>】: 加入宗门。\n"
-            f"【{CMD_MY_SECT}】: 查看宗门信息。\n"
-            f"【{CMD_LEAVE_SECT}】: 退出宗门。\n"
-            "--- PVE/PVP ---\n"
-            f"【{CMD_SPAR} @某人】: 与玩家切磋。\n"
-            f"【{CMD_BOSS_LIST}】: 查看当前世界Boss。\n"
-            f"【{CMD_FIGHT_BOSS} <ID>】: 讨伐指定ID的Boss。\n"
-            f"【{CMD_ENTER_REALM}】: 进入秘境。\n"
-            f"【{CMD_REALM_ADVANCE}】: 在秘境中前进。\n"
-            f"【{CMD_LEAVE_REALM}】: 离开秘境。\n"
-            "--------------------"
+            "═══════ 寻仙指令手册 ═══════\n"
+            "\n"
+            "【入门指引】\n"
+            f"  {CMD_START_XIUXIAN} - 开启修仙之旅\n"
+            f"  {CMD_PLAYER_INFO} - 查看人物信息\n"
+            f"  {CMD_CHECK_IN} - 每日签到(0点刷新)\n"
+            "\n"
+            "【修炼成长】\n"
+            f"  {CMD_START_CULTIVATION} - 开始闭关修炼\n"
+            f"  {CMD_END_CULTIVATION} - 结束闭关\n"
+            f"  {CMD_BREAKTHROUGH} - 尝试突破境界\n"
+            f"  {CMD_REROLL_SPIRIT_ROOT} - 重置灵根\n"
+            "\n"
+            "【坊市物品】\n"
+            f"  {CMD_SHOP} - 查看坊市商品\n"
+            f"  {CMD_BACKPACK} - 查看背包\n"
+            f"  {CMD_BUY} <名> [数] - 购买物品\n"
+            f"  {CMD_USE_ITEM} <名> [数] - 使用/装备\n"
+            f"  {CMD_MY_EQUIPMENT} - 查看装备\n"
+            f"  {CMD_UNEQUIP} <部位> - 卸下装备\n"
+            "\n"
+            "【宗门社交】\n"
+            f"  {CMD_CREATE_SECT} <名> - 创建宗门\n"
+            f"  {CMD_JOIN_SECT} <名> - 加入宗门\n"
+            f"  {CMD_MY_SECT} - 查看宗门\n"
+            f"  {CMD_LEAVE_SECT} - 退出宗门\n"
+            "\n"
+            "【战斗探险】\n"
+            f"  {CMD_SPAR} @某人 - 切磋比试\n"
+            f"  {CMD_BOSS_LIST} - 查看世界Boss\n"
+            f"  {CMD_FIGHT_BOSS} <ID> - 讨伐Boss\n"
+            f"  {CMD_ENTER_REALM} - 进入秘境\n"
+            f"  {CMD_REALM_ADVANCE} - 秘境前进\n"
+            f"  {CMD_LEAVE_REALM} - 离开秘境\n"
+            "\n"
+            "【排行榜】\n"
+            f"  {CMD_REALM_RANKING} - 境界排行\n"
+            f"  {CMD_WEALTH_RANKING} - 财富排行\n"
+            f"  {CMD_COMBAT_RANKING} - 战力排行\n"
+            f"  {CMD_MY_RANKING} - 我的排名\n"
+            "\n"
+            "【每日任务】\n"
+            f"  {CMD_DAILY_TASKS} - 查看每日任务\n"
+            f"  {CMD_CLAIM_DAILY_REWARDS} - 领取奖励\n"
+            "\n"
+            "【奇遇探索】\n"
+            f"  {CMD_ADVENTURE} - 触发奇遇(每日3次)\n"
+            f"  {CMD_ADVENTURE_STATUS} - 奇遇状态\n"
+            "\n"
+            "【天劫系统】\n"
+            f"  {CMD_TRIBULATION_INFO} - 查看天劫信息\n"
+            f"  {CMD_CHALLENGE_TRIBULATION} - 挑战天劫\n"
+            "\n"
+            "【悬赏任务】\n"
+            f"  {CMD_BOUNTY_LIST} - 查看悬赏榜\n"
+            f"  {CMD_ACCEPT_BOUNTY} <名> - 接取悬赏\n"
+            f"  {CMD_BOUNTY_STATUS} - 悬赏状态\n"
+            "\n"
+            "═══════════════════════════"
         )
         yield event.plain_result(help_text)

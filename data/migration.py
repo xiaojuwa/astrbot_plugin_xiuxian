@@ -5,7 +5,7 @@ from typing import Dict, Callable, Awaitable
 from astrbot.api import logger
 from ..config_manager import ConfigManager
 
-LATEST_DB_VERSION = 9 # 版本号提升
+LATEST_DB_VERSION = 10 # 版本号提升
 
 MIGRATION_TASKS: Dict[int, Callable[[aiosqlite.Connection, ConfigManager], Awaitable[None]]] = {}
 
@@ -31,7 +31,7 @@ class MigrationManager:
                 logger.info("未检测到数据库版本，将进行全新安装...")
                 await self.conn.execute("BEGIN")
                 # 使用最新的建表函数
-                await _create_all_tables_v9(self.conn)
+                await _create_all_tables_v10(self.conn)
                 await self.conn.execute("INSERT INTO db_info (version) VALUES (?)", (LATEST_DB_VERSION,))
                 await self.conn.commit()
                 logger.info(f"数据库已初始化到最新版本: v{LATEST_DB_VERSION}")
@@ -281,3 +281,192 @@ async def _upgrade_v8_to_v9(conn: aiosqlite.Connection, config_manager: ConfigMa
         if 'equipped_accessory' not in columns:
             await conn.execute("ALTER TABLE players ADD COLUMN equipped_accessory TEXT")
     logger.info("v8 -> v9 数据库迁移完成！")
+
+@migration(10)
+async def _upgrade_v9_to_v10(conn: aiosqlite.Connection, config_manager: ConfigManager):
+    """添加每日任务和奇遇系统相关表"""
+    logger.info("开始执行 v9 -> v10 数据库迁移...")
+
+    # 每日任务进度表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS daily_task_progress (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            task_date TEXT NOT NULL,
+            task_id TEXT NOT NULL,
+            completed INTEGER NOT NULL DEFAULT 0,
+            claimed INTEGER NOT NULL DEFAULT 0,
+            UNIQUE(user_id, task_date, task_id),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+
+    # 每日全勤奖励领取记录
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS daily_bonus_claimed (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            claim_date TEXT NOT NULL,
+            UNIQUE(user_id, claim_date),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+
+    # 奇遇记录表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS adventure_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            adventure_date TEXT NOT NULL,
+            adventure_type TEXT NOT NULL,
+            result TEXT,
+            reward_gold INTEGER DEFAULT 0,
+            reward_exp INTEGER DEFAULT 0,
+            created_at REAL NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+
+    # 玩家每日奇遇次数限制
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS daily_adventure_count (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            adventure_date TEXT NOT NULL,
+            count INTEGER NOT NULL DEFAULT 0,
+            UNIQUE(user_id, adventure_date),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+    # 玩家每日悬赏任务次数限制
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS daily_bounty_count (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            bounty_date TEXT NOT NULL,
+            count INTEGER NOT NULL DEFAULT 0,
+            UNIQUE(user_id, bounty_date),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+
+    # 玩家每日悬赏任务次数限制
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS daily_bounty_count (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            bounty_date TEXT NOT NULL,
+            count INTEGER NOT NULL DEFAULT 0,
+            UNIQUE(user_id, bounty_date),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+
+    logger.info("v9 -> v10 数据库迁移完成！")
+
+async def _create_all_tables_v10(conn: aiosqlite.Connection):
+    """创建所有表（v10版本）"""
+    await conn.execute("CREATE TABLE IF NOT EXISTS db_info (version INTEGER NOT NULL)")
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS sects (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE,
+            leader_id TEXT NOT NULL, level INTEGER NOT NULL DEFAULT 1,
+            funds INTEGER NOT NULL DEFAULT 0
+        )
+    """)
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS players (
+            user_id TEXT PRIMARY KEY, level_index INTEGER NOT NULL, spiritual_root TEXT NOT NULL,
+            experience INTEGER NOT NULL, gold INTEGER NOT NULL, last_check_in REAL NOT NULL,
+            state TEXT NOT NULL, state_start_time REAL NOT NULL, sect_id INTEGER, sect_name TEXT,
+            hp INTEGER NOT NULL, max_hp INTEGER NOT NULL, attack INTEGER NOT NULL, defense INTEGER NOT NULL,
+            realm_id TEXT, realm_floor INTEGER NOT NULL DEFAULT 0, realm_data TEXT,
+            equipped_weapon TEXT, equipped_armor TEXT, equipped_accessory TEXT,
+            FOREIGN KEY (sect_id) REFERENCES sects (id) ON DELETE SET NULL
+        )
+    """)
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS inventory (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL, item_id TEXT NOT NULL,
+            quantity INTEGER NOT NULL, FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE,
+            UNIQUE(user_id, item_id)
+        )
+    """)
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS active_world_bosses (
+            boss_id TEXT PRIMARY KEY,
+            current_hp INTEGER NOT NULL,
+            max_hp INTEGER NOT NULL,
+            spawned_at REAL NOT NULL,
+            level_index INTEGER NOT NULL
+        )
+    """)
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS world_boss_participants (
+            boss_id TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            user_name TEXT NOT NULL,
+            total_damage INTEGER NOT NULL DEFAULT 0,
+            PRIMARY KEY (boss_id, user_id),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+    # 每日任务进度表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS daily_task_progress (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            task_date TEXT NOT NULL,
+            task_id TEXT NOT NULL,
+            completed INTEGER NOT NULL DEFAULT 0,
+            claimed INTEGER NOT NULL DEFAULT 0,
+            UNIQUE(user_id, task_date, task_id),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+    # 每日全勤奖励领取记录
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS daily_bonus_claimed (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            claim_date TEXT NOT NULL,
+            UNIQUE(user_id, claim_date),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+    # 奇遇记录表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS adventure_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            adventure_date TEXT NOT NULL,
+            adventure_type TEXT NOT NULL,
+            result TEXT,
+            reward_gold INTEGER DEFAULT 0,
+            reward_exp INTEGER DEFAULT 0,
+            created_at REAL NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+    # 玩家每日奇遇次数限制
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS daily_adventure_count (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            adventure_date TEXT NOT NULL,
+            count INTEGER NOT NULL DEFAULT 0,
+            UNIQUE(user_id, adventure_date),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+    # 玩家每日悬赏任务次数限制
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS daily_bounty_count (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            bounty_date TEXT NOT NULL,
+            count INTEGER NOT NULL DEFAULT 0,
+            UNIQUE(user_id, bounty_date),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)

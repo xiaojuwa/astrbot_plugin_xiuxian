@@ -7,6 +7,11 @@ from .combat_handler import CombatHandler
 from .realm_handler import RealmHandler
 from .misc_handler import MiscHandler
 from .equipment_handler import EquipmentHandler
+from .ranking_handler import RankingHandler
+from .daily_task_handler import DailyTaskHandler
+from .adventure_handler import AdventureHandler
+from .tribulation_handler import TribulationHandler
+from .bounty_handler import BountyHandler
 
 __all__ = [
     "PlayerHandler",
@@ -15,5 +20,10 @@ __all__ = [
     "CombatHandler",
     "RealmHandler",
     "MiscHandler",
-    "EquipmentHandler"
+    "EquipmentHandler",
+    "RankingHandler",
+    "DailyTaskHandler",
+    "AdventureHandler",
+    "TribulationHandler",
+    "BountyHandler"
 ]

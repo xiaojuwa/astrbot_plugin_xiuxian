@@ -6,7 +6,8 @@ from .data import DataBase, MigrationManager
 from .config_manager import ConfigManager
 from .handlers import (
     MiscHandler, PlayerHandler, ShopHandler, SectHandler, CombatHandler, RealmHandler,
-    EquipmentHandler
+    EquipmentHandler, RankingHandler, DailyTaskHandler, AdventureHandler, TribulationHandler,
+    BountyHandler
 )
 
 # 指令定义
@@ -37,11 +38,34 @@ CMD_LEAVE_REALM = "离开秘境"
 CMD_UNEQUIP = "卸下"
 CMD_MY_EQUIPMENT = "我的装备"
 
+# 排行榜相关指令
+CMD_REALM_RANKING = "境界排行"
+CMD_WEALTH_RANKING = "财富排行"
+CMD_COMBAT_RANKING = "战力排行"
+CMD_MY_RANKING = "我的排名"
+
+# 每日任务相关指令
+CMD_DAILY_TASKS = "每日任务"
+CMD_CLAIM_DAILY_REWARDS = "领取任务奖励"
+
+# 奇遇系统相关指令
+CMD_ADVENTURE = "奇遇"
+CMD_ADVENTURE_STATUS = "奇遇状态"
+
+# 天劫系统相关指令
+CMD_TRIBULATION_INFO = "天劫信息"
+CMD_CHALLENGE_TRIBULATION = "渡劫"
+
+# 悬赏任务相关指令
+CMD_BOUNTY_LIST = "悬赏榜"
+CMD_ACCEPT_BOUNTY = "接取悬赏"
+CMD_BOUNTY_STATUS = "悬赏状态"
+
 @register(
     "astrbot_plugin_xiuxian",
     "oldPeter616",
     "基于astrbot框架的文字修仙游戏",
-    "v2.1.0", # 版本号提升
+    "v2.2.0", # 版本号提升
     "https://github.com/oldPeter616/astrbot_plugin_xiuxian"
 )
 class XiuXianPlugin(Star):
@@ -62,6 +86,11 @@ class XiuXianPlugin(Star):
         self.combat_handler = CombatHandler(self.db, self.config, self.config_manager)
         self.realm_handler = RealmHandler(self.db, self.config, self.config_manager)
         self.equipment_handler = EquipmentHandler(self.db, self.config_manager)
+        self.ranking_handler = RankingHandler(self.db, self.config_manager)
+        self.daily_task_handler = DailyTaskHandler(self.db, self.config, self.config_manager)
+        self.adventure_handler = AdventureHandler(self.db, self.config, self.config_manager)
+        self.tribulation_handler = TribulationHandler(self.db, self.config, self.config_manager)
+        self.bounty_handler = BountyHandler(self.db, self.config, self.config_manager)
 
         access_control_config = self.config.get("ACCESS_CONTROL", {})
         self.whitelist_groups = [str(g) for g in access_control_config.get("WHITELIST_GROUPS", [])]
@@ -278,3 +307,99 @@ class XiuXianPlugin(Star):
             await self._send_access_denied_message(event)
             return
         async for r in self.equipment_handler.handle_my_equipment(event): yield r
+
+    # --- 排行榜指令 ---
+    @filter.command(CMD_REALM_RANKING, "查看境界排行榜")
+    async def handle_realm_ranking(self, event: AstrMessageEvent):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.ranking_handler.handle_realm_ranking(event): yield r
+
+    @filter.command(CMD_WEALTH_RANKING, "查看财富排行榜")
+    async def handle_wealth_ranking(self, event: AstrMessageEvent):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.ranking_handler.handle_wealth_ranking(event): yield r
+
+    @filter.command(CMD_COMBAT_RANKING, "查看战力排行榜")
+    async def handle_combat_ranking(self, event: AstrMessageEvent):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.ranking_handler.handle_combat_ranking(event): yield r
+
+    @filter.command(CMD_MY_RANKING, "查看我的排名")
+    async def handle_my_ranking(self, event: AstrMessageEvent):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.ranking_handler.handle_my_ranking(event): yield r
+
+    # --- 每日任务指令 ---
+    @filter.command(CMD_DAILY_TASKS, "查看每日任务")
+    async def handle_daily_tasks(self, event: AstrMessageEvent):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.daily_task_handler.handle_daily_tasks(event): yield r
+
+    @filter.command(CMD_CLAIM_DAILY_REWARDS, "领取每日任务奖励")
+    async def handle_claim_daily_rewards(self, event: AstrMessageEvent):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.daily_task_handler.handle_claim_daily_rewards(event): yield r
+
+    # --- 奇遇系统指令 ---
+    @filter.command(CMD_ADVENTURE, "触发一次奇遇探索")
+    async def handle_adventure(self, event: AstrMessageEvent):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.adventure_handler.handle_adventure(event): yield r
+
+    @filter.command(CMD_ADVENTURE_STATUS, "查看今日奇遇状态")
+    async def handle_adventure_status(self, event: AstrMessageEvent):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.adventure_handler.handle_adventure_status(event): yield r
+
+    # --- 天劫系统指令 ---
+    @filter.command(CMD_TRIBULATION_INFO, "查看天劫信息")
+    async def handle_tribulation_info(self, event: AstrMessageEvent):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.tribulation_handler.handle_tribulation_info(event): yield r
+
+    @filter.command(CMD_CHALLENGE_TRIBULATION, "挑战天劫")
+    async def handle_challenge_tribulation(self, event: AstrMessageEvent):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.tribulation_handler.handle_challenge_tribulation(event): yield r
+
+    # --- 悬赏任务指令 ---
+    @filter.command(CMD_BOUNTY_LIST, "查看悬赏任务列表")
+    async def handle_bounty_list(self, event: AstrMessageEvent):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.bounty_handler.handle_bounty_list(event): yield r
+
+    @filter.command(CMD_ACCEPT_BOUNTY, "接取并执行悬赏任务")
+    async def handle_accept_bounty(self, event: AstrMessageEvent, bounty_name: str):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.bounty_handler.handle_accept_bounty(event, bounty_name): yield r
+
+    @filter.command(CMD_BOUNTY_STATUS, "查看悬赏状态")
+    async def handle_bounty_status(self, event: AstrMessageEvent):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.bounty_handler.handle_bounty_status(event): yield r

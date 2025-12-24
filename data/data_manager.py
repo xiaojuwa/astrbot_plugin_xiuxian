@@ -86,6 +86,97 @@ class DataBase:
             rows = await cursor.fetchall()
             return [Player(**dict(row)) for row in rows]
 
+    # ========== 排行榜相关方法 ==========
+
+    async def get_top_players_by_realm(self, limit: int = 10) -> List[Player]:
+        """获取境界排行榜（按境界等级和修为排序）"""
+        async with self.conn.execute(
+            "SELECT * FROM players ORDER BY level_index DESC, experience DESC LIMIT ?", (limit,)
+        ) as cursor:
+            rows = await cursor.fetchall()
+            return [Player(**dict(row)) for row in rows]
+
+    async def get_top_players_by_gold(self, limit: int = 10) -> List[Player]:
+        """获取财富排行榜（按灵石数量排序）"""
+        async with self.conn.execute(
+            "SELECT * FROM players ORDER BY gold DESC LIMIT ?", (limit,)
+        ) as cursor:
+            rows = await cursor.fetchall()
+            return [Player(**dict(row)) for row in rows]
+
+    async def get_top_players_by_combat(self, limit: int = 10, config_manager: ConfigManager = None) -> List[tuple]:
+        """获取战力排行榜（按综合战力排序）"""
+        async with self.conn.execute("SELECT * FROM players") as cursor:
+            rows = await cursor.fetchall()
+            players = [Player(**dict(row)) for row in rows]
+
+        # 计算每个玩家的战力并排序
+        player_combat_list = []
+        for player in players:
+            combat_stats = player.get_combat_stats(config_manager) if config_manager else {
+                "attack": player.attack, "defense": player.defense, "max_hp": player.max_hp
+            }
+            # 战力公式：攻击*2 + 防御*1.5 + 生命*0.1
+            combat_power = int(combat_stats["attack"] * 2 + combat_stats["defense"] * 1.5 + combat_stats["max_hp"] * 0.1)
+            player_combat_list.append((player, combat_power))
+
+        # 按战力降序排序
+        player_combat_list.sort(key=lambda x: x[1], reverse=True)
+        return player_combat_list[:limit]
+
+    async def get_player_realm_rank(self, user_id: str) -> int:
+        """获取玩家的境界排名"""
+        async with self.conn.execute("""
+            SELECT COUNT(*) + 1 as rank FROM players p1
+            WHERE (p1.level_index > (SELECT level_index FROM players WHERE user_id = ?))
+            OR (p1.level_index = (SELECT level_index FROM players WHERE user_id = ?)
+                AND p1.experience > (SELECT experience FROM players WHERE user_id = ?))
+        """, (user_id, user_id, user_id)) as cursor:
+            row = await cursor.fetchone()
+            return row["rank"] if row else 0
+
+    async def get_player_wealth_rank(self, user_id: str) -> int:
+        """获取玩家的财富排名"""
+        async with self.conn.execute("""
+            SELECT COUNT(*) + 1 as rank FROM players
+            WHERE gold > (SELECT gold FROM players WHERE user_id = ?)
+        """, (user_id,)) as cursor:
+            row = await cursor.fetchone()
+            return row["rank"] if row else 0
+
+    async def get_player_combat_rank(self, user_id: str, config_manager: ConfigManager = None) -> int:
+        """获取玩家的战力排名"""
+        player = await self.get_player_by_id(user_id)
+        if not player:
+            return 0
+
+        combat_stats = player.get_combat_stats(config_manager) if config_manager else {
+            "attack": player.attack, "defense": player.defense, "max_hp": player.max_hp
+        }
+        player_power = int(combat_stats["attack"] * 2 + combat_stats["defense"] * 1.5 + combat_stats["max_hp"] * 0.1)
+
+        # 获取所有玩家并计算战力
+        async with self.conn.execute("SELECT * FROM players") as cursor:
+            rows = await cursor.fetchall()
+            players = [Player(**dict(row)) for row in rows]
+
+        rank = 1
+        for p in players:
+            p_stats = p.get_combat_stats(config_manager) if config_manager else {
+                "attack": p.attack, "defense": p.defense, "max_hp": p.max_hp
+            }
+            p_power = int(p_stats["attack"] * 2 + p_stats["defense"] * 1.5 + p_stats["max_hp"] * 0.1)
+            if p_power > player_power:
+                rank += 1
+
+        return rank
+
+    async def get_all_players_count(self) -> int:
+        """获取所有玩家数量"""
+        async with self.conn.execute("SELECT COUNT(*) as count FROM players") as cursor:
+            row = await cursor.fetchone()
+            return row["count"] if row else 0
+
     async def get_player_by_id(self, user_id: str) -> Optional[Player]:
         async with self.conn.execute("SELECT * FROM players WHERE user_id = ?", (user_id,)) as cursor:
             row = await cursor.fetchone()
@@ -262,3 +353,105 @@ class DataBase:
             await self.conn.rollback()
             logger.error(f"使用物品事务失败: {e}")
             return False
+
+    # ========== 每日任务相关方法 ==========
+
+    async def get_daily_task_progress(self, user_id: str, task_date: str) -> Dict[str, bool]:
+        """获取玩家当日任务完成进度"""
+        async with self.conn.execute(
+            "SELECT task_id, completed FROM daily_task_progress WHERE user_id = ? AND task_date = ?",
+            (user_id, task_date)
+        ) as cursor:
+            rows = await cursor.fetchall()
+            return {row["task_id"]: bool(row["completed"]) for row in rows}
+
+    async def complete_daily_task(self, user_id: str, task_date: str, task_id: str):
+        """标记每日任务为已完成"""
+        await self.conn.execute("""
+            INSERT INTO daily_task_progress (user_id, task_date, task_id, completed)
+            VALUES (?, ?, ?, 1)
+            ON CONFLICT(user_id, task_date, task_id) DO UPDATE SET completed = 1
+        """, (user_id, task_date, task_id))
+        await self.conn.commit()
+
+    async def get_claimed_daily_tasks(self, user_id: str, task_date: str) -> List[str]:
+        """获取已领取奖励的任务列表"""
+        async with self.conn.execute(
+            "SELECT task_id FROM daily_task_progress WHERE user_id = ? AND task_date = ? AND claimed = 1",
+            (user_id, task_date)
+        ) as cursor:
+            rows = await cursor.fetchall()
+            return [row["task_id"] for row in rows]
+
+    async def mark_daily_task_claimed(self, user_id: str, task_date: str, task_id: str):
+        """标记任务奖励已领取"""
+        await self.conn.execute("""
+            UPDATE daily_task_progress SET claimed = 1
+            WHERE user_id = ? AND task_date = ? AND task_id = ?
+        """, (user_id, task_date, task_id))
+        await self.conn.commit()
+
+    async def is_daily_bonus_claimed(self, user_id: str, claim_date: str) -> bool:
+        """检查全勤奖励是否已领取"""
+        async with self.conn.execute(
+            "SELECT 1 FROM daily_bonus_claimed WHERE user_id = ? AND claim_date = ?",
+            (user_id, claim_date)
+        ) as cursor:
+            return await cursor.fetchone() is not None
+
+    async def mark_daily_bonus_claimed(self, user_id: str, claim_date: str):
+        """标记全勤奖励已领取"""
+        await self.conn.execute(
+            "INSERT OR IGNORE INTO daily_bonus_claimed (user_id, claim_date) VALUES (?, ?)",
+            (user_id, claim_date)
+        )
+        await self.conn.commit()
+
+    # ========== 奇遇系统相关方法 ==========
+
+    async def get_daily_adventure_count(self, user_id: str, adventure_date: str) -> int:
+        """获取玩家当日奇遇次数"""
+        async with self.conn.execute(
+            "SELECT count FROM daily_adventure_count WHERE user_id = ? AND adventure_date = ?",
+            (user_id, adventure_date)
+        ) as cursor:
+            row = await cursor.fetchone()
+            return row["count"] if row else 0
+
+    async def increment_adventure_count(self, user_id: str, adventure_date: str):
+        """增加玩家当日奇遇次数"""
+        await self.conn.execute("""
+            INSERT INTO daily_adventure_count (user_id, adventure_date, count)
+            VALUES (?, ?, 1)
+            ON CONFLICT(user_id, adventure_date) DO UPDATE SET count = count + 1
+        """, (user_id, adventure_date))
+        await self.conn.commit()
+
+    async def add_adventure_log(self, user_id: str, adventure_date: str, adventure_type: str,
+                                 result: str, reward_gold: int, reward_exp: int, created_at: float):
+        """添加奇遇记录"""
+        await self.conn.execute("""
+            INSERT INTO adventure_log (user_id, adventure_date, adventure_type, result, reward_gold, reward_exp, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (user_id, adventure_date, adventure_type, result, reward_gold, reward_exp, created_at))
+        await self.conn.commit()
+
+    # ========== 悬赏任务相关方法 ==========
+
+    async def get_daily_bounty_count(self, user_id: str, bounty_date: str) -> int:
+        """获取玩家当日悬赏任务完成次数"""
+        async with self.conn.execute(
+            "SELECT count FROM daily_bounty_count WHERE user_id = ? AND bounty_date = ?",
+            (user_id, bounty_date)
+        ) as cursor:
+            row = await cursor.fetchone()
+            return row["count"] if row else 0
+
+    async def increment_bounty_count(self, user_id: str, bounty_date: str):
+        """增加玩家当日悬赏任务完成次数"""
+        await self.conn.execute("""
+            INSERT INTO daily_bounty_count (user_id, bounty_date, count)
+            VALUES (?, ?, 1)
+            ON CONFLICT(user_id, bounty_date) DO UPDATE SET count = count + 1
+        """, (user_id, bounty_date))
+        await self.conn.commit()
