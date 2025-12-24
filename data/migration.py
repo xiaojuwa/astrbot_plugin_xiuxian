@@ -875,10 +875,10 @@ async def _upgrade_v13_to_v14(conn: aiosqlite.Connection, config_manager: Config
 
     logger.info("v13 -> v14 数据库迁移完成！激活码系统已添加。")
 
-@migration(15)
-async def _upgrade_v14_to_v15(conn: aiosqlite.Connection, config_manager: ConfigManager):
+@migration(16)
+async def _upgrade_v15_to_v16(conn: aiosqlite.Connection, config_manager: ConfigManager):
     """v2.5.0: 添加GM激活码管理表"""
-    logger.info("开始执行 v14 -> v15 数据库迁移（GM激活码管理）...")
+    logger.info("开始执行 v15 -> v16 数据库迁移（GM激活码管理）...")
 
     # 创建GM激活码表
     await conn.execute("""
