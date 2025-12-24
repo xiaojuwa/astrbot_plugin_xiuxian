@@ -1,0 +1,368 @@
+{
+    "alchemy": {
+        "r_1001": {
+            "name": "小回血丹方",
+            "output_id": "1001",
+            "output_min": 1,
+            "output_max": 3,
+            "materials": {"2012": 2, "2034": 1},
+            "base_success_rate": 0.85,
+            "required_level": 1,
+            "required_realm": 0,
+            "exp_reward": 2
+        },
+        "r_1002": {
+            "name": "引气丹方",
+            "output_id": "1002",
+            "output_min": 1,
+            "output_max": 2,
+            "materials": {"2015": 3, "2034": 1},
+            "base_success_rate": 0.80,
+            "required_level": 1,
+            "required_realm": 0,
+            "exp_reward": 3
+        },
+        "r_1003": {
+            "name": "中回血丹方",
+            "output_id": "1003",
+            "output_min": 1,
+            "output_max": 2,
+            "materials": {"2019": 1, "2012": 3, "2034": 1},
+            "base_success_rate": 0.65,
+            "required_level": 2,
+            "required_realm": 3,
+            "exp_reward": 5
+        },
+        "r_1004": {
+            "name": "筑基丹方",
+            "output_id": "1004",
+            "output_min": 1,
+            "output_max": 1,
+            "materials": {"2020": 2, "2019": 1, "2034": 2},
+            "base_success_rate": 0.50,
+            "required_level": 3,
+            "required_realm": 5,
+            "exp_reward": 8
+        },
+        "r_1005": {
+            "name": "聚灵丹方",
+            "output_id": "1005",
+            "output_min": 1,
+            "output_max": 2,
+            "materials": {"2015": 5, "2002": 2, "2034": 1},
+            "base_success_rate": 0.60,
+            "required_level": 2,
+            "required_realm": 3,
+            "exp_reward": 5
+        },
+        "r_1006": {
+            "name": "大力丸方",
+            "output_id": "1006",
+            "output_min": 2,
+            "output_max": 4,
+            "materials": {"2013": 2, "2018": 1, "2034": 1},
+            "base_success_rate": 0.80,
+            "required_level": 1,
+            "required_realm": 0,
+            "exp_reward": 2
+        },
+        "r_1007": {
+            "name": "凝神丹方",
+            "output_id": "1007",
+            "output_min": 1,
+            "output_max": 1,
+            "materials": {"2004": 2, "2020": 2, "2026": 1, "2034": 2},
+            "base_success_rate": 0.40,
+            "required_level": 5,
+            "required_realm": 10,
+            "exp_reward": 15
+        },
+        "r_1008": {
+            "name": "九转还魂丹方",
+            "output_id": "1008",
+            "output_min": 1,
+            "output_max": 1,
+            "materials": {"2027": 2, "2004": 3, "2019": 5, "2034": 3},
+            "base_success_rate": 0.25,
+            "required_level": 6,
+            "required_realm": 12,
+            "exp_reward": 20
+        },
+        "r_1009": {
+            "name": "破障丹方",
+            "output_id": "1009",
+            "output_min": 1,
+            "output_max": 1,
+            "materials": {"2027": 1, "2028": 1, "2022": 3, "2034": 2},
+            "base_success_rate": 0.30,
+            "required_level": 6,
+            "required_realm": 12,
+            "exp_reward": 18
+        },
+        "r_1010": {
+            "name": "金髓丹方",
+            "output_id": "1010",
+            "output_min": 1,
+            "output_max": 1,
+            "materials": {"2032": 1, "2026": 2, "2027": 2, "2034": 3},
+            "base_success_rate": 0.15,
+            "required_level": 8,
+            "required_realm": 15,
+            "exp_reward": 35
+        },
+        "r_1011": {
+            "name": "虎力丹方",
+            "output_id": "1011",
+            "output_min": 1,
+            "output_max": 2,
+            "materials": {"2021": 1, "2013": 3, "2034": 1},
+            "base_success_rate": 0.65,
+            "required_level": 2,
+            "required_realm": 3,
+            "exp_reward": 5
+        },
+        "r_1012": {
+            "name": "铁皮丹方",
+            "output_id": "1012",
+            "output_min": 2,
+            "output_max": 4,
+            "materials": {"2014": 2, "2022": 1, "2034": 1},
+            "base_success_rate": 0.80,
+            "required_level": 1,
+            "required_realm": 0,
+            "exp_reward": 2
+        },
+        "r_1013": {
+            "name": "金钟丹方",
+            "output_id": "1013",
+            "output_min": 1,
+            "output_max": 2,
+            "materials": {"2022": 2, "2014": 3, "2034": 1},
+            "base_success_rate": 0.60,
+            "required_level": 3,
+            "required_realm": 5,
+            "exp_reward": 6
+        },
+        "r_1014": {
+            "name": "解毒丹方",
+            "output_id": "1014",
+            "output_min": 2,
+            "output_max": 4,
+            "materials": {"2012": 3, "2002": 1, "2034": 1},
+            "base_success_rate": 0.85,
+            "required_level": 1,
+            "required_realm": 0,
+            "exp_reward": 2
+        },
+        "r_1015": {
+            "name": "续命丹方",
+            "output_id": "1015",
+            "output_min": 1,
+            "output_max": 2,
+            "materials": {"2019": 2, "2004": 1, "2034": 1},
+            "base_success_rate": 0.55,
+            "required_level": 3,
+            "required_realm": 5,
+            "exp_reward": 6
+        },
+        "r_1016": {
+            "name": "洗髓丹方",
+            "output_id": "1016",
+            "output_min": 1,
+            "output_max": 1,
+            "materials": {"2026": 1, "2004": 2, "2020": 2, "2034": 2},
+            "base_success_rate": 0.35,
+            "required_level": 5,
+            "required_realm": 10,
+            "exp_reward": 12
+        }
+    },
+    "smithing": {
+        "r_3001": {
+            "name": "青锋剑图",
+            "output_id": "3001",
+            "materials": {"2001": 5, "2018": 2},
+            "base_success_rate": 0.75,
+            "required_level": 1,
+            "required_realm": 0,
+            "exp_reward": 3
+        },
+        "r_3002": {
+            "name": "玄铁甲图",
+            "output_id": "3002",
+            "materials": {"2016": 5, "2017": 3},
+            "base_success_rate": 0.75,
+            "required_level": 1,
+            "required_realm": 0,
+            "exp_reward": 3
+        },
+        "r_3003": {
+            "name": "烈阳刀图",
+            "output_id": "3003",
+            "materials": {"2007": 5, "2003": 3},
+            "base_success_rate": 0.50,
+            "required_level": 3,
+            "required_realm": 5,
+            "exp_reward": 8
+        },
+        "r_3004": {
+            "name": "月华袍图",
+            "output_id": "3004",
+            "materials": {"2011": 3, "2024": 5},
+            "base_success_rate": 0.50,
+            "required_level": 3,
+            "required_realm": 5,
+            "exp_reward": 8
+        },
+        "r_3006": {
+            "name": "镇魂幡图",
+            "output_id": "3006",
+            "materials": {"2006": 5, "2008": 3, "2031": 1},
+            "base_success_rate": 0.25,
+            "required_level": 6,
+            "required_realm": 12,
+            "exp_reward": 20
+        },
+        "r_3007": {
+            "name": "寒霜剑图",
+            "output_id": "3007",
+            "materials": {"2010": 3, "2027": 2, "2031": 1},
+            "base_success_rate": 0.20,
+            "required_level": 6,
+            "required_realm": 12,
+            "exp_reward": 25
+        },
+        "r_3008": {
+            "name": "泰坦之铠图",
+            "output_id": "3008",
+            "materials": {"2009": 5, "2030": 3, "2028": 2},
+            "base_success_rate": 0.18,
+            "required_level": 7,
+            "required_realm": 14,
+            "exp_reward": 28
+        },
+        "r_3009": {
+            "name": "妖精之弓图",
+            "output_id": "3009",
+            "materials": {"2011": 5, "2024": 3, "2029": 1},
+            "base_success_rate": 0.22,
+            "required_level": 6,
+            "required_realm": 12,
+            "exp_reward": 22
+        },
+        "r_3011": {
+            "name": "玄铁刀图",
+            "output_id": "3011",
+            "materials": {"2016": 5, "2018": 3},
+            "base_success_rate": 0.70,
+            "required_level": 1,
+            "required_realm": 0,
+            "exp_reward": 4
+        },
+        "r_3012": {
+            "name": "灵蚕袍图",
+            "output_id": "3012",
+            "materials": {"2024": 5, "2014": 2},
+            "base_success_rate": 0.55,
+            "required_level": 2,
+            "required_realm": 3,
+            "exp_reward": 6
+        },
+        "r_3013": {
+            "name": "聚灵珠图",
+            "output_id": "3013",
+            "materials": {"2003": 3, "2015": 5},
+            "base_success_rate": 0.70,
+            "required_level": 1,
+            "required_realm": 0,
+            "exp_reward": 3
+        },
+        "r_3014": {
+            "name": "护心镜图",
+            "output_id": "3014",
+            "materials": {"2003": 5, "2022": 2},
+            "base_success_rate": 0.55,
+            "required_level": 2,
+            "required_realm": 3,
+            "exp_reward": 6
+        },
+        "r_3015": {
+            "name": "龙鳞铠图",
+            "output_id": "3015",
+            "materials": {"2028": 5, "2030": 2},
+            "base_success_rate": 0.20,
+            "required_level": 6,
+            "required_realm": 12,
+            "exp_reward": 25
+        },
+        "r_3016": {
+            "name": "龙渊剑图",
+            "output_id": "3016",
+            "materials": {"2031": 3, "2030": 3},
+            "base_success_rate": 0.22,
+            "required_level": 6,
+            "required_realm": 12,
+            "exp_reward": 23
+        },
+        "r_3017": {
+            "name": "凤凰玉佩图",
+            "output_id": "3017",
+            "materials": {"2029": 3, "2011": 2},
+            "base_success_rate": 0.25,
+            "required_level": 6,
+            "required_realm": 12,
+            "exp_reward": 22
+        },
+        "r_3005": {
+            "name": "弑神枪图",
+            "output_id": "3005",
+            "materials": {"2033": 3, "2032": 2, "2031": 3},
+            "base_success_rate": 0.08,
+            "required_level": 10,
+            "required_realm": 18,
+            "exp_reward": 50
+        },
+        "r_3010": {
+            "name": "戮仙剑阵图",
+            "output_id": "3010",
+            "materials": {"2033": 5, "2032": 3, "2030": 5},
+            "base_success_rate": 0.06,
+            "required_level": 10,
+            "required_realm": 20,
+            "exp_reward": 60
+        }
+    },
+    "furnace_levels": {
+        "1": {"name": "凡铁丹炉", "price": 500, "success_bonus": 0.0, "quality_bonus": 0.0},
+        "2": {"name": "青铜丹炉", "price": 3000, "success_bonus": 0.05, "quality_bonus": 0.05, "required_level": 2},
+        "3": {"name": "紫金丹炉", "price": 15000, "success_bonus": 0.10, "quality_bonus": 0.10, "required_level": 4},
+        "4": {"name": "玄天丹炉", "price": 80000, "success_bonus": 0.18, "quality_bonus": 0.18, "required_level": 7},
+        "5": {"name": "太上丹炉", "price": 500000, "success_bonus": 0.30, "quality_bonus": 0.30, "required_level": 10}
+    },
+    "forge_levels": {
+        "1": {"name": "简易炼器台", "price": 800, "success_bonus": 0.0, "quality_bonus": 0.0},
+        "2": {"name": "精工炼器台", "price": 5000, "success_bonus": 0.05, "quality_bonus": 0.05, "required_level": 2},
+        "3": {"name": "天工炼器台", "price": 25000, "success_bonus": 0.10, "quality_bonus": 0.10, "required_level": 4},
+        "4": {"name": "神匠炼器台", "price": 120000, "success_bonus": 0.18, "quality_bonus": 0.18, "required_level": 7},
+        "5": {"name": "造化炼器台", "price": 800000, "success_bonus": 0.30, "quality_bonus": 0.30, "required_level": 10}
+    },
+    "crafter_levels": {
+        "1": {"name": "学徒", "exp_required": 0},
+        "2": {"name": "初窥门径", "exp_required": 100},
+        "3": {"name": "小有所成", "exp_required": 300},
+        "4": {"name": "登堂入室", "exp_required": 600},
+        "5": {"name": "炉火纯青", "exp_required": 1000},
+        "6": {"name": "出神入化", "exp_required": 1500},
+        "7": {"name": "宗师", "exp_required": 2200},
+        "8": {"name": "大宗师", "exp_required": 3000},
+        "9": {"name": "丹圣/器圣", "exp_required": 4000},
+        "10": {"name": "丹帝/器帝", "exp_required": 5500}
+    },
+    "quality_rates": {
+        "残次": {"rate": 0.15, "multiplier": 0.7, "color": "灰"},
+        "普通": {"rate": 0.45, "multiplier": 1.0, "color": "白"},
+        "精良": {"rate": 0.25, "multiplier": 1.3, "color": "绿"},
+        "完美": {"rate": 0.12, "multiplier": 1.6, "color": "蓝"},
+        "传说": {"rate": 0.03, "multiplier": 2.0, "color": "紫"}
+    }
+}

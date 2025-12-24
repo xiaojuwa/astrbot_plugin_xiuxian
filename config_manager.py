@@ -16,7 +16,8 @@ class ConfigManager:
             "boss": base_dir / "config" / "bosses.json",
             "monster": base_dir / "config" / "monsters.json",
             "realm": base_dir / "config" / "realms.json",
-            "tag": base_dir / "config" / "tags.json"
+            "tag": base_dir / "config" / "tags.json",
+            "recipe": base_dir / "config" / "recipes.json"
         }
 
         self.level_data: List[dict] = []
@@ -25,11 +26,13 @@ class ConfigManager:
         self.monster_data: Dict[str, dict] = {}
         self.realm_data: Dict[str, dict] = {}
         self.tag_data: Dict[str, dict] = {}
+        self.recipe_data: Dict[str, dict] = {}
 
         self.level_map: Dict[str, dict] = {}
         self.item_name_to_id: Dict[str, str] = {}
         self.realm_name_to_id: Dict[str, str] = {}
         self.boss_name_to_id: Dict[str, str] = {}
+        self.recipe_name_to_id: Dict[str, str] = {}
 
         self._load_all()
 
@@ -54,6 +57,7 @@ class ConfigManager:
         self.monster_data = self._load_json_data(self._paths["monster"])
         self.realm_data = self._load_json_data(self._paths["realm"])
         self.tag_data = self._load_json_data(self._paths["tag"])
+        self.recipe_data = self._load_json_data(self._paths["recipe"])
 
         self.level_map = {info["level_name"]: {"index": i, **info}
                           for i, info in enumerate(self.level_data) if "level_name" in info}
@@ -72,6 +76,14 @@ class ConfigManager:
                                  for realm_id, info in self.realm_data.items() if "name" in info}
         self.boss_name_to_id = {info["name"]: boss_id
                                 for boss_id, info in self.boss_data.items() if "name" in info}
+        
+        # 加载配方名称映射
+        self.recipe_name_to_id = {}
+        for craft_type in ["alchemy", "smithing"]:
+            if craft_type in self.recipe_data:
+                for recipe_id, recipe_info in self.recipe_data[craft_type].items():
+                    if "name" in recipe_info:
+                        self.recipe_name_to_id[recipe_info["name"]] = recipe_id
 
     def get_item_by_name(self, name: str) -> Optional[Tuple[str, Item]]:
         item_id = self.item_name_to_id.get(name)
@@ -84,3 +96,40 @@ class ConfigManager:
     def get_boss_by_name(self, name: str) -> Optional[Tuple[str, dict]]:
         boss_id = self.boss_name_to_id.get(name)
         return (boss_id, self.boss_data[boss_id]) if boss_id else None
+
+    def get_recipe_by_name(self, name: str) -> Optional[Tuple[str, dict, str]]:
+        """根据配方名获取配方信息，返回 (recipe_id, recipe_info, craft_type)"""
+        recipe_id = self.recipe_name_to_id.get(name)
+        if not recipe_id:
+            return None
+        for craft_type in ["alchemy", "smithing"]:
+            if craft_type in self.recipe_data and recipe_id in self.recipe_data[craft_type]:
+                return (recipe_id, self.recipe_data[craft_type][recipe_id], craft_type)
+        return None
+
+    def get_recipe_by_id(self, recipe_id: str) -> Optional[Tuple[dict, str]]:
+        """根据配方ID获取配方信息，返回 (recipe_info, craft_type)"""
+        for craft_type in ["alchemy", "smithing"]:
+            if craft_type in self.recipe_data and recipe_id in self.recipe_data[craft_type]:
+                return (self.recipe_data[craft_type][recipe_id], craft_type)
+        return None
+
+    def get_all_recipes(self, craft_type: str) -> Dict[str, dict]:
+        """获取指定类型的所有配方"""
+        return self.recipe_data.get(craft_type, {})
+
+    def get_furnace_info(self, level: int) -> Optional[dict]:
+        """获取丹炉信息"""
+        return self.recipe_data.get("furnace_levels", {}).get(str(level))
+
+    def get_forge_info(self, level: int) -> Optional[dict]:
+        """获取炼器台信息"""
+        return self.recipe_data.get("forge_levels", {}).get(str(level))
+
+    def get_crafter_level_info(self, level: int) -> Optional[dict]:
+        """获取炼丹师/炼器师等级信息"""
+        return self.recipe_data.get("crafter_levels", {}).get(str(level))
+
+    def get_quality_rates(self) -> Dict[str, dict]:
+        """获取品质概率配置"""
+        return self.recipe_data.get("quality_rates", {})

@@ -5,10 +5,7 @@
         "rank": "凡品",
         "description": "普通的丹药，能恢复少量气血。",
         "price": 50,
-        "effect": {
-            "type": "add_hp",
-            "value": 100
-        }
+        "effect": {"type": "add_hp", "value": 100}
     },
     "1002": {
         "name": "引气丹",
@@ -16,10 +13,7 @@
         "rank": "凡品",
         "description": "能少量增加修为，对炼气期修士效果显著。",
         "price": 200,
-        "effect": {
-            "type": "add_experience",
-            "value": 100
-        }
+        "effect": {"type": "add_experience", "value": 100}
     },
     "1003": {
         "name": "三品回元丹",
@@ -27,10 +21,7 @@
         "rank": "珍品",
         "description": "快速恢复大量气血，是战斗中的保障。",
         "price": 500,
-        "effect": {
-            "type": "add_hp",
-            "value": 500
-        }
+        "effect": {"type": "add_hp", "value": 500}
     },
     "1004": {
         "name": "筑基丹",
@@ -38,11 +29,7 @@
         "rank": "珍品",
         "description": "辅助突破的关键丹药，使用后获得攻击加成buff。",
         "price": 2000,
-        "buff_effect": {
-            "type": "attack_buff",
-            "value": 30,
-            "duration": 5
-        }
+        "buff_effect": {"type": "attack_buff", "value": 30, "duration": 5}
     },
     "1005": {
         "name": "聚灵丹",
@@ -50,10 +37,7 @@
         "rank": "珍品",
         "description": "蕴含精纯灵气，能大幅增加修为。",
         "price": 1000,
-        "effect": {
-            "type": "add_experience",
-            "value": 500
-        }
+        "effect": {"type": "add_experience", "value": 500}
     },
     "1006": {
         "name": "大力丸",
@@ -61,11 +45,7 @@
         "rank": "凡品",
         "description": "凡人所制的丹丸，能临时增长攻击力。",
         "price": 80,
-        "buff_effect": {
-            "type": "attack_buff",
-            "value": 10,
-            "duration": 3
-        }
+        "buff_effect": {"type": "attack_buff", "value": 10, "duration": 3}
     },
     "1007": {
         "name": "五品凝神丹",
@@ -73,10 +53,7 @@
         "rank": "圣品",
         "description": "蕴含天地法则，能让修士获得海量修为。",
         "price": 8000,
-        "effect": {
-            "type": "add_experience",
-            "value": 5000
-        }
+        "effect": {"type": "add_experience", "value": 5000}
     },
     "1008": {
         "name": "九转还魂丹",
@@ -84,10 +61,7 @@
         "rank": "圣品",
         "description": "生死人肉白骨的无上神药，能瞬间恢复所有生命。",
         "price": 15000,
-        "effect": {
-            "type": "add_hp",
-            "value": 99999
-        }
+        "effect": {"type": "add_hp", "value": 99999}
     },
     "1009": {
         "name": "破障丹",
@@ -95,11 +69,7 @@
         "rank": "圣品",
         "description": "突破瓶颈时使用，大幅提升防御力。",
         "price": 25000,
-        "buff_effect": {
-            "type": "defense_buff",
-            "value": 100,
-            "duration": 8
-        }
+        "buff_effect": {"type": "defense_buff", "value": 100, "duration": 8}
     },
     "1010": {
         "name": "金髓丹",
@@ -107,24 +77,69 @@
         "rank": "帝品",
         "description": "以上古神兽骨髓炼制，据说能洗筋伐髓，重塑根骨。",
         "price": 100000,
-        "effect": {
-            "type": "add_experience",
-            "value": 50000
-        }
+        "effect": {"type": "add_experience", "value": 50000}
+    },
+    "1011": {
+        "name": "虎力丹",
+        "type": "丹药",
+        "rank": "珍品",
+        "description": "以虎魄炼制，大幅提升攻击力。",
+        "price": 1500,
+        "buff_effect": {"type": "attack_buff", "value": 25, "duration": 5}
+    },
+    "1012": {
+        "name": "铁皮丹",
+        "type": "丹药",
+        "rank": "凡品",
+        "description": "服用后皮肤坚硬如铁，提升防御。",
+        "price": 100,
+        "buff_effect": {"type": "defense_buff", "value": 10, "duration": 3}
+    },
+    "1013": {
+        "name": "金钟丹",
+        "type": "丹药",
+        "rank": "珍品",
+        "description": "金钟罩护体，大幅提升防御。",
+        "price": 1800,
+        "buff_effect": {"type": "defense_buff", "value": 30, "duration": 5}
+    },
+    "1014": {
+        "name": "解毒丹",
+        "type": "丹药",
+        "rank": "凡品",
+        "description": "清除体内毒素，恢复少量生命。",
+        "price": 60,
+        "effect": {"type": "add_hp", "value": 50}
+    },
+    "1015": {
+        "name": "续命丹",
+        "type": "丹药",
+        "rank": "珍品",
+        "description": "续命延寿的灵丹，恢复大量生命。",
+        "price": 800,
+        "effect": {"type": "add_hp", "value": 800}
+    },
+    "1016": {
+        "name": "洗髓丹",
+        "type": "丹药",
+        "rank": "圣品",
+        "description": "洗筋伐髓，大幅增加修为。",
+        "price": 12000,
+        "effect": {"type": "add_experience", "value": 8000}
     },
     "2001": {
         "name": "精铁",
         "type": "材料",
         "rank": "凡品",
-        "description": "基础的炼器材料。",
+        "description": "基础的炼器材料，可用于锻造凡品武器。",
         "price": 100
     },
     "2002": {
         "name": "百年灵草",
         "type": "材料",
         "rank": "凡品",
-        "description": "蕴含天地灵气的草药，是炼制高级丹药的主材。",
-        "price": 500
+        "description": "蕴含天地灵气的草药，是炼制丹药的基础材料。",
+        "price": 80
     },
     "2003": {
         "name": "紫金沙",
@@ -138,13 +153,13 @@
         "type": "材料",
         "rank": "珍品",
         "description": "炼制高阶丹药的灵物，蕴含庞大的生命精气。",
-        "price": 3000
+        "price": 2000
     },
     "2005": {
         "name": "魔核碎片",
         "type": "材料",
         "rank": "珍品",
-        "description": "魔族生物的力量核心，散发着不祥的气息。",
+        "description": "魔族生物的力量核心，可炼制攻击类丹药。",
         "price": 1200
     },
     "2006": {
@@ -189,6 +204,174 @@
         "description": "妖精在月光下飞舞时洒落的粉尘，拥有奇异的魔力。",
         "price": 7500
     },
+    "2012": {
+        "name": "灵芝草",
+        "type": "材料",
+        "rank": "凡品",
+        "description": "最基础的炼丹材料，可炼制回血丹药。",
+        "price": 50
+    },
+    "2013": {
+        "name": "火灵草",
+        "type": "材料",
+        "rank": "凡品",
+        "description": "蕴含火灵之力，可炼制攻击类丹药。",
+        "price": 60
+    },
+    "2014": {
+        "name": "寒玉花",
+        "type": "材料",
+        "rank": "凡品",
+        "description": "生于寒冰之地，可炼制防御类丹药。",
+        "price": 60
+    },
+    "2015": {
+        "name": "聚气草",
+        "type": "材料",
+        "rank": "凡品",
+        "description": "能聚集天地灵气，是炼制修为丹药的基础材料。",
+        "price": 70
+    },
+    "2016": {
+        "name": "玄铁",
+        "type": "材料",
+        "rank": "凡品",
+        "description": "比精铁更坚硬的矿石，可锻造防具。",
+        "price": 120
+    },
+    "2017": {
+        "name": "妖兽皮",
+        "type": "材料",
+        "rank": "凡品",
+        "description": "妖兽的皮毛，可用于制作防具。",
+        "price": 80
+    },
+    "2018": {
+        "name": "妖兽骨",
+        "type": "材料",
+        "rank": "凡品",
+        "description": "妖兽的骨骼，可用于锻造武器。",
+        "price": 90
+    },
+    "2019": {
+        "name": "血灵芝",
+        "type": "材料",
+        "rank": "珍品",
+        "description": "吸收了大量血气的灵芝，可炼制高级回血丹。",
+        "price": 600
+    },
+    "2020": {
+        "name": "九叶莲",
+        "type": "材料",
+        "rank": "珍品",
+        "description": "九片叶子的珍稀莲花，可炼制突破类丹药。",
+        "price": 1000
+    },
+    "2021": {
+        "name": "虎魄",
+        "type": "材料",
+        "rank": "珍品",
+        "description": "猛虎的精魄凝结，可炼制攻击类丹药。",
+        "price": 800
+    },
+    "2022": {
+        "name": "玄龟壳",
+        "type": "材料",
+        "rank": "珍品",
+        "description": "玄龟的龟壳，可炼制防御类丹药或防具。",
+        "price": 900
+    },
+    "2023": {
+        "name": "寒铁",
+        "type": "材料",
+        "rank": "珍品",
+        "description": "蕴含寒气的矿石，可锻造冰属性法器。",
+        "price": 1400
+    },
+    "2024": {
+        "name": "灵蚕丝",
+        "type": "材料",
+        "rank": "珍品",
+        "description": "灵蚕吐出的丝线，可制作法袍。",
+        "price": 1000
+    },
+    "2025": {
+        "name": "妖丹碎片",
+        "type": "材料",
+        "rank": "珍品",
+        "description": "妖兽妖丹的碎片，可作为炼丹催化剂。",
+        "price": 1500
+    },
+    "2026": {
+        "name": "天火精华",
+        "type": "材料",
+        "rank": "圣品",
+        "description": "天火凝结的精华，可炼制极品攻击丹药。",
+        "price": 10000
+    },
+    "2027": {
+        "name": "万年玄冰",
+        "type": "材料",
+        "rank": "圣品",
+        "description": "万年不化的玄冰，可炼制极品防御丹药。",
+        "price": 10000
+    },
+    "2028": {
+        "name": "龙鳞",
+        "type": "材料",
+        "rank": "圣品",
+        "description": "真龙脱落的鳞片，可锻造圣品防具。",
+        "price": 15000
+    },
+    "2029": {
+        "name": "凤凰羽",
+        "type": "材料",
+        "rank": "圣品",
+        "description": "凤凰的羽毛，可锻造圣品饰品。",
+        "price": 18000
+    },
+    "2030": {
+        "name": "天外陨铁",
+        "type": "材料",
+        "rank": "圣品",
+        "description": "天外陨落的神铁，可锻造圣品武器。",
+        "price": 12000
+    },
+    "2031": {
+        "name": "龙晶石",
+        "type": "材料",
+        "rank": "圣品",
+        "description": "蕴含龙之力量的晶石，可锻造龙系法器。",
+        "price": 20000
+    },
+    "2032": {
+        "name": "仙灵之露",
+        "type": "材料",
+        "rank": "帝品",
+        "description": "仙界流落的灵露，炼制帝品丹药必需。",
+        "price": 50000
+    },
+    "2033": {
+        "name": "混沌精金",
+        "type": "材料",
+        "rank": "帝品",
+        "description": "混沌中诞生的神金，锻造帝品法器必需。",
+        "price": 80000
+    },
+    "2034": {
+        "name": "丹火石",
+        "type": "材料",
+        "rank": "凡品",
+        "description": "炼丹的燃料，每次炼丹消耗1个。",
+        "price": 30
+    },
+    "2035": {
+        "name": "聚灵阵盘",
+        "type": "材料",
+        "rank": "珍品",
+        "description": "使用后提升炼制成功率5%。",
+        "price": 500
+    },
     "3001": {
         "name": "青锋剑",
         "type": "法器",
@@ -196,9 +379,7 @@
         "rank": "凡品",
         "description": "由精铁打造的利剑，是修士入门的常用法器。",
         "price": 800,
-        "equip_effects": {
-            "attack": 8
-        }
+        "equip_effects": {"attack": 8}
     },
     "3002": {
         "name": "玄铁甲",
@@ -207,9 +388,7 @@
         "rank": "凡品",
         "description": "由玄铁编织的内甲，能提供基础的防护。",
         "price": 800,
-        "equip_effects": {
-            "defense": 10
-        }
+        "equip_effects": {"defense": 10}
     },
     "3003": {
         "name": "烈阳刀",
@@ -218,9 +397,7 @@
         "rank": "珍品",
         "description": "刀身赤红，挥舞间似有烈阳之威。",
         "price": 4000,
-        "equip_effects": {
-            "attack": 25
-        }
+        "equip_effects": {"attack": 25}
     },
     "3004": {
         "name": "月华袍",
@@ -229,10 +406,7 @@
         "rank": "珍品",
         "description": "以月光精华织成，轻盈且防御力不俗。",
         "price": 4000,
-        "equip_effects": {
-            "defense": 22,
-            "max_hp": 50
-        }
+        "equip_effects": {"defense": 22, "max_hp": 50}
     },
     "3005": {
         "name": "弑神枪",
@@ -241,9 +415,7 @@
         "rank": "帝品",
         "description": "传说中的禁忌法器，枪出如龙，有弑神之威。",
         "price": 9999999,
-        "equip_effects": {
-            "attack": 500
-        }
+        "equip_effects": {"attack": 500}
     },
     "3006": {
         "name": "镇魂幡",
@@ -252,10 +424,7 @@
         "rank": "圣品",
         "description": "以幽魂草和千年玄铁炼制，对鬼魅有天然的克制之力。",
         "price": 500000,
-        "equip_effects": {
-            "attack": 100,
-            "defense": 50
-        }
+        "equip_effects": {"attack": 100, "defense": 50}
     },
     "3007": {
         "name": "寒霜剑",
@@ -264,9 +433,7 @@
         "rank": "圣品",
         "description": "剑身由玄冰之核打造，挥舞时可冰封百里。",
         "price": 600000,
-        "equip_effects": {
-            "attack": 250
-        }
+        "equip_effects": {"attack": 250}
     },
     "3008": {
         "name": "泰坦之铠",
@@ -275,10 +442,7 @@
         "rank": "圣品",
         "description": "以上古机关术打造的重甲，坚不可摧。",
         "price": 750000,
-        "equip_effects": {
-            "defense": 300,
-            "max_hp": 200
-        }
+        "equip_effects": {"defense": 300, "max_hp": 200}
     },
     "3009": {
         "name": "妖精之弓",
@@ -287,9 +451,7 @@
         "rank": "圣品",
         "description": "以月光粉尘和神木打造，箭矢能追踪敌人。",
         "price": 550000,
-        "equip_effects": {
-            "attack": 220
-        }
+        "equip_effects": {"attack": 220}
     },
     "3010": {
         "name": "戮仙剑阵",
@@ -298,10 +460,70 @@
         "rank": "帝品",
         "description": "四把神剑组成的无上剑阵，非天道圣人不可挡。",
         "price": 8888888,
-        "equip_effects": {
-            "attack": 800,
-            "defense": 200
-        }
+        "equip_effects": {"attack": 800, "defense": 200}
+    },
+    "3011": {
+        "name": "玄铁刀",
+        "type": "法器",
+        "subtype": "武器",
+        "rank": "凡品",
+        "description": "玄铁锻造的长刀，锋利无比。",
+        "price": 1000,
+        "equip_effects": {"attack": 12}
+    },
+    "3012": {
+        "name": "灵蚕袍",
+        "type": "法器",
+        "subtype": "防具",
+        "rank": "珍品",
+        "description": "灵蚕丝织成的法袍，轻盈柔软。",
+        "price": 3500,
+        "equip_effects": {"defense": 18, "max_hp": 30}
+    },
+    "3013": {
+        "name": "聚灵珠",
+        "type": "法器",
+        "subtype": "饰品",
+        "rank": "凡品",
+        "description": "能聚集灵气的珠子，略微提升属性。",
+        "price": 600,
+        "equip_effects": {"attack": 3, "defense": 3}
+    },
+    "3014": {
+        "name": "护心镜",
+        "type": "法器",
+        "subtype": "饰品",
+        "rank": "珍品",
+        "description": "护住心脉的铜镜，提升防御和生命。",
+        "price": 3000,
+        "equip_effects": {"defense": 15, "max_hp": 50}
+    },
+    "3015": {
+        "name": "龙鳞铠",
+        "type": "法器",
+        "subtype": "防具",
+        "rank": "圣品",
+        "description": "以龙鳞锻造的铠甲，防御力惊人。",
+        "price": 650000,
+        "equip_effects": {"defense": 280, "max_hp": 150}
+    },
+    "3016": {
+        "name": "龙渊剑",
+        "type": "法器",
+        "subtype": "武器",
+        "rank": "圣品",
+        "description": "蕴含龙之力量的神剑。",
+        "price": 580000,
+        "equip_effects": {"attack": 230}
+    },
+    "3017": {
+        "name": "凤凰玉佩",
+        "type": "法器",
+        "subtype": "饰品",
+        "rank": "圣品",
+        "description": "凤凰羽毛炼制的玉佩，大幅提升生命。",
+        "price": 480000,
+        "equip_effects": {"max_hp": 300, "defense": 80}
     },
     "4001": {
         "name": "长春功残篇",
@@ -309,9 +531,7 @@
         "rank": "凡品",
         "description": "一部基础的吐纳法门，修炼后永久增加生命上限。",
         "price": 1000,
-        "skill_effects": {
-            "max_hp": 50
-        }
+        "skill_effects": {"max_hp": 50}
     },
     "4002": {
         "name": "焚天诀上卷",
@@ -319,9 +539,7 @@
         "rank": "圣品",
         "description": "传说中可焚尽万物的无上功法，永久大幅提升攻击力。",
         "price": 888888,
-        "skill_effects": {
-            "attack": 150
-        }
+        "skill_effects": {"attack": 150}
     },
     "4003": {
         "name": "他化自在大法",
@@ -329,11 +547,7 @@
         "rank": "帝品",
         "description": "无上秘法，永久大幅提升攻击、防御、生命。",
         "price": 9999999,
-        "skill_effects": {
-            "attack": 300,
-            "defense": 200,
-            "max_hp": 500
-        }
+        "skill_effects": {"attack": 300, "defense": 200, "max_hp": 500}
     },
     "4004": {
         "name": "不动明王经",
@@ -341,10 +555,7 @@
         "rank": "珍品",
         "description": "佛门炼体功法，永久提升防御和生命上限。",
         "price": 10000,
-        "skill_effects": {
-            "defense": 30,
-            "max_hp": 100
-        }
+        "skill_effects": {"defense": 30, "max_hp": 100}
     },
     "4005": {
         "name": "御风诀",
@@ -352,9 +563,7 @@
         "rank": "凡品",
         "description": "修炼后身轻如燕，永久提升攻击力。",
         "price": 1200,
-        "skill_effects": {
-            "attack": 8
-        }
+        "skill_effects": {"attack": 8}
     },
     "4006": {
         "name": "龟息功",
@@ -362,9 +571,7 @@
         "rank": "凡品",
         "description": "模拟玄龟呼吸，永久提升防御力。",
         "price": 900,
-        "skill_effects": {
-            "defense": 8
-        }
+        "skill_effects": {"defense": 8}
     },
     "4007": {
         "name": "北冥神功",
@@ -372,9 +579,7 @@
         "rank": "珍品",
         "description": "能吸取他人修为，永久大幅提升攻击力。",
         "price": 25000,
-        "skill_effects": {
-            "attack": 50
-        }
+        "skill_effects": {"attack": 50}
     },
     "4008": {
         "name": "九阳神功",
@@ -382,10 +587,7 @@
         "rank": "珍品",
         "description": "至刚至阳的内功心法，永久提升生命和防御。",
         "price": 22000,
-        "skill_effects": {
-            "max_hp": 150,
-            "defense": 25
-        }
+        "skill_effects": {"max_hp": 150, "defense": 25}
     },
     "4009": {
         "name": "道经",
@@ -393,11 +595,7 @@
         "rank": "帝品",
         "description": "阐述了天地至理的无上经文，大幅提升全属性。",
         "price": 7777777,
-        "skill_effects": {
-            "attack": 250,
-            "defense": 150,
-            "max_hp": 400
-        }
+        "skill_effects": {"attack": 250, "defense": 150, "max_hp": 400}
     },
     "4010": {
         "name": "吞天魔功",
@@ -405,8 +603,6 @@
         "rank": "帝品",
         "description": "魔道无上功法，极大提升攻击力，禁忌的存在。",
         "price": 6666666,
-        "skill_effects": {
-            "attack": 400
-        }
+        "skill_effects": {"attack": 400}
     }
 }

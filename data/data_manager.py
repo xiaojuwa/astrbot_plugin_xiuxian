@@ -208,6 +208,14 @@ class DataBase:
                 'realm_id': None,
                 'realm_floor': 0,
                 'realm_data': None,
+                # v2.4.0 炼丹/炼器系统
+                'alchemy_level': 1,
+                'alchemy_exp': 0,
+                'smithing_level': 1,
+                'smithing_exp': 0,
+                'furnace_level': 1,
+                'forge_level': 1,
+                'unlocked_recipes': '[]',
             }
             
             # 确保所有必需字段存在且有有效值
@@ -578,3 +586,128 @@ class DataBase:
             'member_count': len(members),
             'members': members
         }
+
+    # ========== 炼丹/炼器系统相关方法 ==========
+
+    async def record_crafting(self, user_id: str, craft_type: str, recipe_id: str, 
+                              success: bool, quality: str, output_count: int):
+        """记录炼制日志"""
+        import time
+        await self.conn.execute("""
+            INSERT INTO crafting_log (user_id, craft_type, recipe_id, success, quality, output_count, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (user_id, craft_type, recipe_id, 1 if success else 0, quality, output_count, time.time()))
+        await self.conn.commit()
+
+    async def get_daily_sell_count(self, user_id: str, sell_date: str) -> int:
+        """获取玩家当日回购次数"""
+        async with self.conn.execute(
+            "SELECT count FROM daily_sell_count WHERE user_id = ? AND sell_date = ?",
+            (user_id, sell_date)
+        ) as cursor:
+            row = await cursor.fetchone()
+            return row["count"] if row else 0
+
+    async def increment_sell_count(self, user_id: str, sell_date: str):
+        """增加玩家当日回购次数"""
+        await self.conn.execute("""
+            INSERT INTO daily_sell_count (user_id, sell_date, count)
+            VALUES (?, ?, 1)
+            ON CONFLICT(user_id, sell_date) DO UPDATE SET count = count + 1
+        """, (user_id, sell_date))
+        await self.conn.commit()
+
+    async def transactional_sell_item(self, user_id: str, item_id: str, quantity: int, total_price: int) -> Tuple[bool, str]:
+        """出售物品事务"""
+        try:
+            await self.conn.execute("BEGIN")
+            cursor = await self.conn.execute(
+                "UPDATE inventory SET quantity = quantity - ? WHERE user_id = ? AND item_id = ? AND quantity >= ?",
+                (quantity, user_id, item_id, quantity)
+            )
+            if cursor.rowcount == 0:
+                await self.conn.rollback()
+                return False, "ERROR_INSUFFICIENT_ITEMS"
+
+            await self.conn.execute("DELETE FROM inventory WHERE user_id = ? AND item_id = ? AND quantity <= 0", (user_id, item_id))
+            await self.conn.execute(
+                "UPDATE players SET gold = gold + ? WHERE user_id = ?",
+                (total_price, user_id)
+            )
+            await self.conn.commit()
+            return True, "SUCCESS"
+        except aiosqlite.Error as e:
+            await self.conn.rollback()
+            logger.error(f"出售物品事务失败: {e}")
+            return False, "ERROR_DATABASE"
+
+    async def transactional_craft_item(self, user_id: str, materials: Dict[str, int], 
+                                        output_id: str, output_count: int) -> Tuple[bool, str]:
+        """炼制物品事务 - 消耗材料，产出物品"""
+        try:
+            await self.conn.execute("BEGIN")
+            
+            # 检查并消耗所有材料
+            for item_id, quantity in materials.items():
+                cursor = await self.conn.execute(
+                    "UPDATE inventory SET quantity = quantity - ? WHERE user_id = ? AND item_id = ? AND quantity >= ?",
+                    (quantity, user_id, item_id, quantity)
+                )
+                if cursor.rowcount == 0:
+                    await self.conn.rollback()
+                    return False, f"ERROR_INSUFFICIENT_MATERIAL_{item_id}"
+                
+                await self.conn.execute(
+                    "DELETE FROM inventory WHERE user_id = ? AND item_id = ? AND quantity <= 0", 
+                    (user_id, item_id)
+                )
+            
+            # 添加产出物品
+            await self.conn.execute("""
+                INSERT INTO inventory (user_id, item_id, quantity) VALUES (?, ?, ?)
+                ON CONFLICT(user_id, item_id) DO UPDATE SET quantity = quantity + excluded.quantity;
+            """, (user_id, output_id, output_count))
+            
+            await self.conn.commit()
+            return True, "SUCCESS"
+        except aiosqlite.Error as e:
+            await self.conn.rollback()
+            logger.error(f"炼制物品事务失败: {e}")
+            return False, "ERROR_DATABASE"
+
+    async def transactional_craft_fail(self, user_id: str, materials: Dict[str, int], 
+                                        loss_ratio: float = 0.5) -> Tuple[bool, str]:
+        """炼制失败事务 - 消耗部分材料"""
+        try:
+            await self.conn.execute("BEGIN")
+            
+            for item_id, quantity in materials.items():
+                loss_count = max(1, int(quantity * loss_ratio))
+                cursor = await self.conn.execute(
+                    "UPDATE inventory SET quantity = quantity - ? WHERE user_id = ? AND item_id = ? AND quantity >= ?",
+                    (loss_count, user_id, item_id, loss_count)
+                )
+                if cursor.rowcount == 0:
+                    await self.conn.rollback()
+                    return False, f"ERROR_INSUFFICIENT_MATERIAL_{item_id}"
+                
+                await self.conn.execute(
+                    "DELETE FROM inventory WHERE user_id = ? AND item_id = ? AND quantity <= 0", 
+                    (user_id, item_id)
+                )
+            
+            await self.conn.commit()
+            return True, "SUCCESS"
+        except aiosqlite.Error as e:
+            await self.conn.rollback()
+            logger.error(f"炼制失败事务失败: {e}")
+            return False, "ERROR_DATABASE"
+
+    async def check_materials(self, user_id: str, materials: Dict[str, int]) -> Tuple[bool, List[str]]:
+        """检查玩家是否拥有足够的材料"""
+        missing = []
+        for item_id, required in materials.items():
+            item = await self.get_item_from_inventory(user_id, item_id)
+            if not item or item['quantity'] < required:
+                missing.append(item_id)
+        return len(missing) == 0, missing

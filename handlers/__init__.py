@@ -13,6 +13,7 @@ from .adventure_handler import AdventureHandler
 from .tribulation_handler import TribulationHandler
 from .bounty_handler import BountyHandler
 from .trade_handler import TradeHandler
+from .crafting_handler import CraftingHandler
 
 __all__ = [
     "PlayerHandler",
@@ -27,5 +28,6 @@ __all__ = [
     "AdventureHandler",
     "TribulationHandler",
     "BountyHandler",
-    "TradeHandler"
+    "TradeHandler",
+    "CraftingHandler"
 ]

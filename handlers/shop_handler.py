@@ -1,6 +1,6 @@
 # handlers/shop_handler.py
 import random
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional, Tuple
 from astrbot.api.event import AstrMessageEvent
 from astrbot.api import AstrBotConfig
@@ -11,6 +11,9 @@ from .utils import player_required
 
 CMD_BUY = "购买"
 CMD_USE_ITEM = "使用"
+CMD_SELL = "出售"
+MAX_DAILY_SELL = 5  # 每日最大回购次数
+SELL_RATIO = 0.4    # 回购价格比例（40%）
 
 __all__ = ["ShopHandler"]
 
@@ -312,3 +315,59 @@ class ShopHandler:
         
         else:
             yield event.plain_result(f"「{item_name}」似乎无法使用。")
+
+    @player_required
+    async def handle_sell(self, player: Player, event: AstrMessageEvent, item_name: str, quantity: int = 1):
+        """出售物品给商店"""
+        if not item_name or quantity <= 0:
+            yield event.plain_result(f"指令格式错误。正确用法: `{CMD_SELL} <物品名> [数量]`。")
+            return
+        
+        today = date.today().isoformat()
+        current_sell_count = await self.db.get_daily_sell_count(player.user_id, today)
+        if current_sell_count >= MAX_DAILY_SELL:
+            yield event.plain_result(
+                f"今日回购次数已用完（{MAX_DAILY_SELL}/{MAX_DAILY_SELL}）。\n"
+                f"明日0点刷新。"
+            )
+            return
+        
+        item_to_sell = self.config_manager.get_item_by_name(item_name)
+        if not item_to_sell:
+            yield event.plain_result(f"未找到名为「{item_name}」的物品。")
+            return
+        
+        item_id, item_info = item_to_sell
+        
+        if item_info.price <= 0:
+            yield event.plain_result(f"「{item_name}」无法出售。")
+            return
+        
+        inventory_item = await self.db.get_item_from_inventory(player.user_id, item_id)
+        if not inventory_item or inventory_item['quantity'] < quantity:
+            current_qty = inventory_item['quantity'] if inventory_item else 0
+            yield event.plain_result(f"出售失败！你只有 {current_qty} 个「{item_name}」。")
+            return
+        
+        sell_price = int(item_info.price * SELL_RATIO * quantity)
+        
+        success, reason = await self.db.transactional_sell_item(player.user_id, item_id, quantity, sell_price)
+        
+        if success:
+            await self.db.increment_sell_count(player.user_id, today)
+            remaining = MAX_DAILY_SELL - current_sell_count - 1
+            
+            updated_player = await self.db.get_player_by_id(player.user_id)
+            new_gold = updated_player.gold if updated_player else player.gold + sell_price
+            
+            yield event.plain_result(
+                f"出售成功！\n"
+                f"卖出「{item_name}」x{quantity}，获得 {sell_price} 灵石。\n"
+                f"当前灵石：{new_gold}\n"
+                f"今日剩余回购次数：{remaining}/{MAX_DAILY_SELL}"
+            )
+        else:
+            if reason == "ERROR_INSUFFICIENT_ITEMS":
+                yield event.plain_result(f"出售失败！物品数量不足。")
+            else:
+                yield event.plain_result("出售失败，请稍后再试。")

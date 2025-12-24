@@ -7,7 +7,7 @@ from .config_manager import ConfigManager
 from .handlers import (
     MiscHandler, PlayerHandler, ShopHandler, SectHandler, CombatHandler, RealmHandler,
     EquipmentHandler, RankingHandler, DailyTaskHandler, AdventureHandler, TribulationHandler,
-    BountyHandler, TradeHandler
+    BountyHandler, TradeHandler, CraftingHandler
 )
 
 # 指令定义
@@ -70,11 +70,21 @@ CMD_SECT_DONATE = "宗门捐献"
 CMD_MY_BUFF = "我的buff"
 CMD_MY_SKILLS = "我的功法"
 
+# v2.4.0 炼丹/炼器系统指令
+CMD_ALCHEMY = "炼丹"
+CMD_SMITHING = "炼器"
+CMD_UPGRADE_FURNACE = "升级丹炉"
+CMD_UPGRADE_FORGE = "升级炼器台"
+CMD_RECIPE_INFO = "配方"
+CMD_RECIPE_LIST = "配方图鉴"
+CMD_MATERIALS = "材料图鉴"
+CMD_SELL = "出售"
+
 @register(
     "astrbot_plugin_xiuxian",
     "xiaojuwa",
     "基于astrbot框架的文字修仙游戏",
-    "v2.3.2", # 版本号提升 - 功法/buff/奇斗/交易系统
+    "v2.4.0", # 版本号提升 - 炼丹/炼器系统
     "https://github.com/xiaojuwa/astrbot_plugin_xiuxian"
 )
 class XiuXianPlugin(Star):
@@ -101,6 +111,7 @@ class XiuXianPlugin(Star):
         self.tribulation_handler = TribulationHandler(self.db, self.config, self.config_manager)
         self.bounty_handler = BountyHandler(self.db, self.config, self.config_manager)
         self.trade_handler = TradeHandler(self.db, self.config, self.config_manager)
+        self.crafting_handler = CraftingHandler(self.db, self.config, self.config_manager)
 
         access_control_config = self.config.get("ACCESS_CONTROL", {})
         self.whitelist_groups = [str(g) for g in access_control_config.get("WHITELIST_GROUPS", [])]
@@ -463,3 +474,66 @@ class XiuXianPlugin(Star):
             await self._send_access_denied_message(event)
             return
         async for r in self.player_handler.handle_my_skills(event): yield r
+
+    # --- v2.4.0 炼丹/炼器系统指令 ---
+    @filter.command(CMD_ALCHEMY, "炼丹界面或炼制丹药")
+    async def handle_alchemy(self, event: AstrMessageEvent, recipe_name: str = ""):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        if recipe_name:
+            async for r in self.crafting_handler.handle_craft_alchemy(event, recipe_name): yield r
+        else:
+            async for r in self.crafting_handler.handle_alchemy(event): yield r
+
+    @filter.command(CMD_SMITHING, "炼器界面或炼制法器")
+    async def handle_smithing(self, event: AstrMessageEvent, recipe_name: str = ""):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        if recipe_name:
+            async for r in self.crafting_handler.handle_craft_smithing(event, recipe_name): yield r
+        else:
+            async for r in self.crafting_handler.handle_smithing(event): yield r
+
+    @filter.command(CMD_UPGRADE_FURNACE, "升级丹炉")
+    async def handle_upgrade_furnace(self, event: AstrMessageEvent):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.crafting_handler.handle_upgrade_furnace(event): yield r
+
+    @filter.command(CMD_UPGRADE_FORGE, "升级炼器台")
+    async def handle_upgrade_forge(self, event: AstrMessageEvent):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.crafting_handler.handle_upgrade_forge(event): yield r
+
+    @filter.command(CMD_RECIPE_INFO, "查看配方详情")
+    async def handle_recipe_info(self, event: AstrMessageEvent, recipe_name: str):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.crafting_handler.handle_recipe_info(event, recipe_name): yield r
+
+    @filter.command(CMD_RECIPE_LIST, "查看所有配方")
+    async def handle_recipe_list(self, event: AstrMessageEvent):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.crafting_handler.handle_recipe_list(event): yield r
+
+    @filter.command(CMD_MATERIALS, "查看材料图鉴")
+    async def handle_materials(self, event: AstrMessageEvent):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.crafting_handler.handle_materials(event): yield r
+
+    @filter.command(CMD_SELL, "出售物品给商店")
+    async def handle_sell(self, event: AstrMessageEvent, item_name: str, quantity: int = 1):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.shop_handler.handle_sell(event, item_name, quantity): yield r

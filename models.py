@@ -72,6 +72,15 @@ class Player:
     pvp_losses: int = 0         # PVP败场
     last_pvp_time: float = 0.0  # 上次PVP时间戳
     sect_contribution: int = 0   # 宗门贡献度
+    
+    # v2.4.0 炼丹/炼器系统
+    alchemy_level: int = 1      # 炼丹师等级
+    alchemy_exp: int = 0        # 炼丹熟练度
+    smithing_level: int = 1     # 炼器师等级
+    smithing_exp: int = 0       # 炼器熟练度
+    furnace_level: int = 1      # 丹炉等级
+    forge_level: int = 1        # 炼器台等级
+    unlocked_recipes: str = "[]"  # JSON存储已解锁配方ID列表
 
     def get_level(self, config_manager: "ConfigManager") -> str:
         if 0 <= self.level_index < len(config_manager.level_data):
@@ -169,6 +178,26 @@ class Player:
         """获取PVP胜率"""
         total = self.pvp_wins + self.pvp_losses
         return (self.pvp_wins / total * 100) if total > 0 else 0.0
+
+    def get_unlocked_recipes_list(self) -> List[str]:
+        """获取已解锁配方ID列表"""
+        try:
+            return json.loads(self.unlocked_recipes) if self.unlocked_recipes else []
+        except json.JSONDecodeError:
+            return []
+    
+    def set_unlocked_recipes_list(self, recipes: List[str]):
+        """设置已解锁配方ID列表"""
+        self.unlocked_recipes = json.dumps(recipes)
+    
+    def unlock_recipe(self, recipe_id: str) -> bool:
+        """解锁一个配方，返回是否是新解锁"""
+        recipes = self.get_unlocked_recipes_list()
+        if recipe_id in recipes:
+            return False
+        recipes.append(recipe_id)
+        self.set_unlocked_recipes_list(recipes)
+        return True
 
     def get_realm_instance(self) -> Optional[RealmInstance]:
         if not self.realm_data:

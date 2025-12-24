@@ -5,7 +5,7 @@ from typing import Dict, Callable, Awaitable
 from astrbot.api import logger
 from ..config_manager import ConfigManager
 
-LATEST_DB_VERSION = 12 # 修复v11迁移遗漏的v2.2.0表
+LATEST_DB_VERSION = 13 # v2.4.0 炼丹/炼器系统
 
 MIGRATION_TASKS: Dict[int, Callable[[aiosqlite.Connection, ConfigManager], Awaitable[None]]] = {}
 
@@ -581,8 +581,61 @@ async def _upgrade_v11_to_v12(conn: aiosqlite.Connection, config_manager: Config
 
     logger.info("v11 -> v12 数据库迁移完成！")
 
+@migration(13)
+async def _upgrade_v12_to_v13(conn: aiosqlite.Connection, config_manager: ConfigManager):
+    """v2.4.0: 添加炼丹/炼器系统相关字段和表"""
+    logger.info("开始执行 v12 -> v13 数据库迁移...")
+
+    # 为 players 表添加炼丹/炼器相关字段
+    async with conn.execute("PRAGMA table_info(players)") as cursor:
+        columns = [row['name'] for row in await cursor.fetchall()]
+        
+        if 'alchemy_level' not in columns:
+            await conn.execute("ALTER TABLE players ADD COLUMN alchemy_level INTEGER NOT NULL DEFAULT 1")
+        if 'alchemy_exp' not in columns:
+            await conn.execute("ALTER TABLE players ADD COLUMN alchemy_exp INTEGER NOT NULL DEFAULT 0")
+        if 'smithing_level' not in columns:
+            await conn.execute("ALTER TABLE players ADD COLUMN smithing_level INTEGER NOT NULL DEFAULT 1")
+        if 'smithing_exp' not in columns:
+            await conn.execute("ALTER TABLE players ADD COLUMN smithing_exp INTEGER NOT NULL DEFAULT 0")
+        if 'furnace_level' not in columns:
+            await conn.execute("ALTER TABLE players ADD COLUMN furnace_level INTEGER NOT NULL DEFAULT 1")
+        if 'forge_level' not in columns:
+            await conn.execute("ALTER TABLE players ADD COLUMN forge_level INTEGER NOT NULL DEFAULT 1")
+        if 'unlocked_recipes' not in columns:
+            await conn.execute("ALTER TABLE players ADD COLUMN unlocked_recipes TEXT DEFAULT '[]'")
+
+    # 创建炼制日志表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS crafting_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            craft_type TEXT NOT NULL,
+            recipe_id TEXT NOT NULL,
+            success INTEGER NOT NULL,
+            quality TEXT,
+            output_count INTEGER,
+            created_at REAL NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+
+    # 创建每日回购次数表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS daily_sell_count (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            sell_date TEXT NOT NULL,
+            count INTEGER NOT NULL DEFAULT 0,
+            UNIQUE(user_id, sell_date),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+
+    logger.info("v12 -> v13 数据库迁移完成！")
+
 async def _create_all_tables_v11(conn: aiosqlite.Connection):
-    """创建所有表（v11版本）- 包含功法、buff、PVP、交易系统"""
+    """创建所有表（v13版本）- 包含功法、buff、PVP、交易、炼丹/炼器系统"""
     await conn.execute("CREATE TABLE IF NOT EXISTS db_info (version INTEGER NOT NULL)")
     await conn.execute("""
         CREATE TABLE IF NOT EXISTS sects (
@@ -603,6 +656,10 @@ async def _create_all_tables_v11(conn: aiosqlite.Connection):
             learned_skills TEXT DEFAULT '[]', active_buffs TEXT DEFAULT '[]',
             pvp_wins INTEGER NOT NULL DEFAULT 0, pvp_losses INTEGER NOT NULL DEFAULT 0,
             last_pvp_time REAL NOT NULL DEFAULT 0, sect_contribution INTEGER NOT NULL DEFAULT 0,
+            alchemy_level INTEGER NOT NULL DEFAULT 1, alchemy_exp INTEGER NOT NULL DEFAULT 0,
+            smithing_level INTEGER NOT NULL DEFAULT 1, smithing_exp INTEGER NOT NULL DEFAULT 0,
+            furnace_level INTEGER NOT NULL DEFAULT 1, forge_level INTEGER NOT NULL DEFAULT 1,
+            unlocked_recipes TEXT DEFAULT '[]',
             FOREIGN KEY (sect_id) REFERENCES sects (id) ON DELETE SET NULL
         )
     """)
@@ -711,6 +768,31 @@ async def _create_all_tables_v11(conn: aiosqlite.Connection):
         CREATE TABLE IF NOT EXISTS pvp_cooldown (
             user_id TEXT PRIMARY KEY,
             last_pvp_time REAL NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+    # 炼制日志表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS crafting_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            craft_type TEXT NOT NULL,
+            recipe_id TEXT NOT NULL,
+            success INTEGER NOT NULL,
+            quality TEXT,
+            output_count INTEGER,
+            created_at REAL NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+    # 每日回购次数表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS daily_sell_count (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            sell_date TEXT NOT NULL,
+            count INTEGER NOT NULL DEFAULT 0,
+            UNIQUE(user_id, sell_date),
             FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
         )
     """)
