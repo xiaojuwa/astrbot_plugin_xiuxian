@@ -12,6 +12,7 @@ from .daily_task_handler import DailyTaskHandler
 from .adventure_handler import AdventureHandler
 from .tribulation_handler import TribulationHandler
 from .bounty_handler import BountyHandler
+from .trade_handler import TradeHandler
 
 __all__ = [
     "PlayerHandler",
@@ -25,5 +26,6 @@ __all__ = [
     "DailyTaskHandler",
     "AdventureHandler",
     "TribulationHandler",
-    "BountyHandler"
+    "BountyHandler",
+    "TradeHandler"
 ]

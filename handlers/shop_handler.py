@@ -170,8 +170,63 @@ class ShopHandler:
             await self.db.update_player(p_clone)
             yield event.plain_result(f"已成功装备【{item_name}】。")
 
-        else:
-            # 消耗品
+        elif target_item_info.type == "功法":
+            # 学习功法 - 永久属性加成
+            if quantity > 1:
+                yield event.plain_result(f"每次只能学习一本功法。")
+                return
+            
+            p_clone = player.clone()
+            learned = p_clone.get_learned_skills_list()
+            
+            # 检查是否已学
+            if target_item_id in learned:
+                yield event.plain_result(f"你已经修炼过「{item_name}」了，无法重复修炼。")
+                return
+            
+            # 学习功法
+            learned.append(target_item_id)
+            p_clone.set_learned_skills_list(learned)
+            
+            # 消耗物品
+            await self.db.remove_item_from_inventory(player.user_id, target_item_id, 1)
+            await self.db.update_player(p_clone)
+            
+            # 构建效果提示
+            effect_lines = []
+            if hasattr(target_item_info, 'skill_effects') and target_item_info.skill_effects:
+                for stat, value in target_item_info.skill_effects.items():
+                    stat_names = {"attack": "攻击", "defense": "防御", "max_hp": "生命上限"}
+                    stat_name = stat_names.get(stat, stat)
+                    effect_lines.append(f"{stat_name}+{value}")
+            
+            effect_msg = "，".join(effect_lines) if effect_lines else "属性提升"
+            yield event.plain_result(f"恭喜！你成功修炼了「{item_name}」！\n永久获得：{effect_msg}")
+
+        elif target_item_info.buff_effect:
+            # 丹药buff - 临时属性加成
+            p_clone = player.clone()
+            buff = target_item_info.buff_effect
+            buff_type = buff.get("type", "attack_buff")
+            buff_value = buff.get("value", 0) * quantity
+            buff_duration = buff.get("duration", 3)
+            
+            # 添加buff
+            p_clone.add_buff(buff_type, buff_value, buff_duration)
+            
+            # 消耗物品
+            await self.db.remove_item_from_inventory(player.user_id, target_item_id, quantity)
+            await self.db.update_player(p_clone)
+            
+            buff_names = {"attack_buff": "攻击", "defense_buff": "防御", "hp_buff": "生命上限"}
+            buff_name = buff_names.get(buff_type, "未知")
+            yield event.plain_result(
+                f"你使用了 {quantity} 个「{item_name}」！\n"
+                f"获得buff：{buff_name}+{buff_value}，持续{buff_duration}场战斗"
+            )
+
+        elif target_item_info.effect:
+            # 消耗品 - 直接效果
             effect, msg = calculate_item_effect(target_item_info, quantity)
             if not effect:
                 yield event.plain_result(msg)
@@ -182,5 +237,7 @@ class ShopHandler:
             if success:
                 yield event.plain_result(msg)
             else:
-                # 理论上这里的数量不足检查不会触发，但作为保险
                 yield event.plain_result(f"使用失败！可能发生了未知错误。")
+        
+        else:
+            yield event.plain_result(f"「{item_name}」似乎无法使用。")

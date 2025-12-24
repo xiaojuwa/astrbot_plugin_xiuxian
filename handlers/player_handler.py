@@ -109,3 +109,50 @@ class PlayerHandler:
         if success and updated_player:
             await self.db.update_player(updated_player)
         yield event.plain_result(msg)
+
+    @player_required
+    async def handle_my_buff(self, player: Player, event: AstrMessageEvent):
+        """查看当前激活的buff"""
+        buffs = player.get_active_buffs_list()
+        
+        if not buffs:
+            yield event.plain_result("你当前没有任何buff加成。\n提示：使用「筑基丹」「大力丸」等丹药可获得临时buff！")
+            return
+        
+        buff_names = {"attack_buff": "攻击加成", "defense_buff": "防御加成", "hp_buff": "生命加成"}
+        
+        lines = ["--- 当前激活的buff ---"]
+        for buff in buffs:
+            buff_type = buff.get("type", "")
+            buff_value = buff.get("value", 0)
+            duration = buff.get("duration", 0)
+            buff_name = buff_names.get(buff_type, buff_type)
+            lines.append(f"  💫 {buff_name}：+{buff_value}（剩余{duration}场战斗）")
+        
+        yield event.plain_result("\n".join(lines))
+
+    @player_required
+    async def handle_my_skills(self, player: Player, event: AstrMessageEvent):
+        """查看已学习的功法"""
+        learned = player.get_learned_skills_list()
+        
+        if not learned:
+            yield event.plain_result("你尚未修炼任何功法。\n提示：购买功法后使用「使用 <功法名>」即可修炼，获得永久属性加成！")
+            return
+        
+        lines = ["--- 已修炼的功法 ---"]
+        for skill_id in learned:
+            skill_item = self.config_manager.item_data.get(str(skill_id))
+            if skill_item:
+                effect_parts = []
+                if hasattr(skill_item, 'skill_effects') and skill_item.skill_effects:
+                    stat_names = {"attack": "攻击", "defense": "防御", "max_hp": "生命"}
+                    for stat, value in skill_item.skill_effects.items():
+                        stat_name = stat_names.get(stat, stat)
+                        effect_parts.append(f"{stat_name}+{value}")
+                effect_str = "，".join(effect_parts) if effect_parts else "未知效果"
+                lines.append(f"  📖 【{skill_item.name}】（{skill_item.rank}）：{effect_str}")
+            else:
+                lines.append(f"  📖 功法ID: {skill_id} (数据丢失)")
+        
+        yield event.plain_result("\n".join(lines))

@@ -1,4 +1,5 @@
 # handlers/combat_handler.py
+import time
 from astrbot.api.event import AstrMessageEvent
 from astrbot.api import AstrBotConfig
 from astrbot.core.message.components import At
@@ -10,11 +11,15 @@ from .utils import player_required
 
 CMD_SPAR = "切磋"
 CMD_FIGHT_BOSS = "讨伐boss"
+CMD_DUEL = "奇斗"
+
+# PVP冷却时间（秒）
+PVP_COOLDOWN_SECONDS = 300  # 5分钟
 
 __all__ = ["CombatHandler"]
 
 class CombatHandler:
-    # 战斗相关指令处理器
+    """战斗相关指令处理器 - 支持切磋、奇斗（灵石赌注）"""
     
     def __init__(self, db: DataBase, config: AstrBotConfig, config_manager: ConfigManager):
         self.db = db
@@ -22,33 +27,43 @@ class CombatHandler:
         self.config_manager = config_manager
         self.battle_manager = BattleManager(db, config, config_manager)
 
+    def _get_mentioned_user(self, event: AstrMessageEvent):
+        """从消息中获取被@的用户ID和名字"""
+        message_obj = event.message_obj
+        if hasattr(message_obj, "message"):
+            for comp in message_obj.message:
+                if isinstance(comp, At):
+                    name = comp.name if hasattr(comp, 'name') else None
+                    return str(comp.qq), name
+        return None, None
+
     @player_required
     async def handle_spar(self, attacker: Player, event: AstrMessageEvent):
+        """普通切磋 - 无赌注，仅记录胜负"""
+        # 检查冷却
+        now = time.time()
+        cooldown = self.config.get("VALUES", {}).get("PVP_COOLDOWN_SECONDS", PVP_COOLDOWN_SECONDS)
+        time_since_last = now - attacker.last_pvp_time
+        if time_since_last < cooldown:
+            remaining = int(cooldown - time_since_last)
+            yield event.plain_result(f"切磋需要休息！冷却中，还需等待 {remaining} 秒。")
+            return
+        
         if attacker.hp < attacker.max_hp:
             yield event.plain_result("你当前气血不满，无法与人切磋，请先恢复。")
             return
 
-        message_obj = event.message_obj
-        mentioned_user_id = None
-        defender_name = None
-
-        if hasattr(message_obj, "message"):
-            for comp in message_obj.message:
-                if isinstance(comp, At):
-                    mentioned_user_id = comp.qq
-                    if hasattr(comp, 'name'):
-                        defender_name = comp.name
-                    break
+        mentioned_user_id, defender_name = self._get_mentioned_user(event)
 
         if not mentioned_user_id:
             yield event.plain_result(f"请指定切磋对象，例如：`{CMD_SPAR} @张三`")
             return
 
-        if str(mentioned_user_id) == attacker.user_id:
+        if mentioned_user_id == attacker.user_id:
             yield event.plain_result("道友，不可与自己为敌。")
             return
 
-        defender = await self.db.get_player_by_id(str(mentioned_user_id))
+        defender = await self.db.get_player_by_id(mentioned_user_id)
         if not defender:
             yield event.plain_result("对方尚未踏入仙途，无法应战。")
             return
@@ -59,7 +74,121 @@ class CombatHandler:
 
         attacker_name = event.get_sender_name()
 
-        _, _, report_lines = self.battle_manager.player_vs_player(attacker, defender, attacker_name, defender_name)
+        # 执行战斗
+        winner, loser, report_lines = self.battle_manager.player_vs_player(
+            attacker, defender, attacker_name, defender_name
+        )
+        
+        # 更新PVP统计和冷却
+        a_clone = attacker.clone()
+        d_clone = defender.clone()
+        a_clone.last_pvp_time = now
+        d_clone.last_pvp_time = now
+        
+        if winner and winner.user_id == attacker.user_id:
+            a_clone.pvp_wins += 1
+            d_clone.pvp_losses += 1
+            # 胜者获得少量修为奖励
+            exp_reward = 50 + attacker.level_index * 10
+            a_clone.experience += exp_reward
+            report_lines.append(f"\n🎉 胜者获得 {exp_reward} 修为奖励！")
+        elif winner:
+            d_clone.pvp_wins += 1
+            a_clone.pvp_losses += 1
+            exp_reward = 50 + defender.level_index * 10
+            d_clone.experience += exp_reward
+            report_lines.append(f"\n🎉 胜者获得 {exp_reward} 修为奖励！")
+        
+        # 消耗buff
+        a_clone.consume_buff_duration()
+        d_clone.consume_buff_duration()
+        
+        await self.db.update_player(a_clone)
+        await self.db.update_player(d_clone)
+        
+        yield event.plain_result("\n".join(report_lines))
+
+    @player_required
+    async def handle_duel(self, attacker: Player, event: AstrMessageEvent, bet_amount: int = 100):
+        """奇斗 - 带灵石赌注的PVP"""
+        if bet_amount < 10:
+            yield event.plain_result("赌注最低10灵石！")
+            return
+        
+        # 检查冷却
+        now = time.time()
+        cooldown = self.config.get("VALUES", {}).get("PVP_COOLDOWN_SECONDS", PVP_COOLDOWN_SECONDS)
+        time_since_last = now - attacker.last_pvp_time
+        if time_since_last < cooldown:
+            remaining = int(cooldown - time_since_last)
+            yield event.plain_result(f"需要休息！冷却中，还需等待 {remaining} 秒。")
+            return
+        
+        if attacker.gold < bet_amount:
+            yield event.plain_result(f"灵石不足！你只有 {attacker.gold} 灵石，无法押注 {bet_amount}。")
+            return
+
+        if attacker.hp < attacker.max_hp:
+            yield event.plain_result("你当前气血不满，无法参与奇斗，请先恢复。")
+            return
+
+        mentioned_user_id, defender_name = self._get_mentioned_user(event)
+
+        if not mentioned_user_id:
+            yield event.plain_result(f"请指定对手，例如：`{CMD_DUEL} @张三 100`")
+            return
+
+        if mentioned_user_id == attacker.user_id:
+            yield event.plain_result("道友，不可与自己为敌。")
+            return
+
+        defender = await self.db.get_player_by_id(mentioned_user_id)
+        if not defender:
+            yield event.plain_result("对方尚未踏入仙途，无法应战。")
+            return
+
+        if defender.hp < defender.max_hp:
+            yield event.plain_result("对方气血不满，此时挑战非君子所为。")
+            return
+        
+        if defender.gold < bet_amount:
+            yield event.plain_result(f"对方灵石不足 {bet_amount}，无法接受挑战。")
+            return
+
+        attacker_name = event.get_sender_name()
+
+        # 执行战斗
+        winner, loser, report_lines = self.battle_manager.player_vs_player(
+            attacker, defender, attacker_name, defender_name
+        )
+        
+        # 更新PVP统计、灵石和冷却
+        a_clone = attacker.clone()
+        d_clone = defender.clone()
+        a_clone.last_pvp_time = now
+        d_clone.last_pvp_time = now
+        
+        # 灵石赌注结算
+        if winner and winner.user_id == attacker.user_id:
+            a_clone.pvp_wins += 1
+            d_clone.pvp_losses += 1
+            a_clone.gold += bet_amount
+            d_clone.gold -= bet_amount
+            report_lines.append(f"\n💰 {attacker_name} 赢得 {bet_amount} 灵石！")
+        elif winner:
+            d_clone.pvp_wins += 1
+            a_clone.pvp_losses += 1
+            d_clone.gold += bet_amount
+            a_clone.gold -= bet_amount
+            report_lines.append(f"\n💰 {defender_name or '对方'} 赢得 {bet_amount} 灵石！")
+        
+        # 消耗buff
+        a_clone.consume_buff_duration()
+        d_clone.consume_buff_duration()
+        
+        await self.db.update_player(a_clone)
+        await self.db.update_player(d_clone)
+        
         yield event.plain_result("\n".join(report_lines))
 
     async def handle_boss_list(self, event: AstrMessageEvent):
@@ -92,4 +221,10 @@ class CombatHandler:
 
         player_name = event.get_sender_name()
         result_msg = await self.battle_manager.player_fight_boss(player, boss_id, player_name)
+        
+        # 战斗后消耗buff
+        p_clone = player.clone()
+        p_clone.consume_buff_duration()
+        await self.db.update_player(p_clone)
+        
         yield event.plain_result(result_msg)

@@ -80,6 +80,24 @@ class RankingHandler:
         ]
         yield event.plain_result("\n".join(lines))
 
+    async def handle_pvp_ranking(self, event: AstrMessageEvent):
+        """PVP排行榜 - 按胜场和胜率排序"""
+        players = await self.db.get_top_players_by_pvp(limit=10)
+        if not players:
+            yield event.plain_result("尚无修士参与过切磋，快去挑战其他道友吧！")
+            return
+
+        lines = ["═══ 【PVP排行榜】 ═══"]
+        for i, player in enumerate(players, 1):
+            level_name = player.get_level(self.config_manager)
+            medal = self._get_medal(i)
+            total = player.pvp_wins + player.pvp_losses
+            win_rate = f"{player.get_pvp_win_rate():.1f}%" if total > 0 else "0%"
+            lines.append(f"{medal} {i}. {player.user_id[:8]}... | {player.pvp_wins}胜{player.pvp_losses}负 | 胜率:{win_rate}")
+
+        lines.append("═══════════════════")
+        yield event.plain_result("\n".join(lines))
+
     def _get_medal(self, rank: int) -> str:
         """获取排名奖牌图标"""
         medals = {1: "🥇", 2: "🥈", 3: "🥉"}

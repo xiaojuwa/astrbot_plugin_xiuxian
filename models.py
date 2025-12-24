@@ -20,6 +20,8 @@ class Item:
     effect: Optional[Dict[str, Any]] = None
     subtype: Optional[str] = None  # 装备子类型，如'武器', '防具'
     equip_effects: Optional[Dict[str, Any]] = None  # 装备属性加成
+    skill_effects: Optional[Dict[str, Any]] = None  # 功法永久属性加成
+    buff_effect: Optional[Dict[str, Any]] = None  # 丹药buff效果
 
 @dataclass
 class FloorEvent:
@@ -62,14 +64,68 @@ class Player:
     equipped_weapon: Optional[str] = None
     equipped_armor: Optional[str] = None
     equipped_accessory: Optional[str] = None
+    
+    # v2.3.0 新增字段
+    learned_skills: str = "[]"  # JSON存储已学功法ID列表
+    active_buffs: str = "[]"    # JSON存储当前激活的buff列表
+    pvp_wins: int = 0           # PVP胜场
+    pvp_losses: int = 0         # PVP败场
+    last_pvp_time: float = 0.0  # 上次PVP时间戳
+    sect_contribution: int = 0   # 宗门贡献度
 
     def get_level(self, config_manager: "ConfigManager") -> str:
         if 0 <= self.level_index < len(config_manager.level_data):
             return config_manager.level_data[self.level_index]["level_name"]
         return "未知境界"
 
+    def get_learned_skills_list(self) -> List[str]:
+        """获取已学习功法ID列表"""
+        try:
+            return json.loads(self.learned_skills) if self.learned_skills else []
+        except json.JSONDecodeError:
+            return []
+    
+    def set_learned_skills_list(self, skills: List[str]):
+        """设置已学习功法ID列表"""
+        self.learned_skills = json.dumps(skills)
+
+    def get_active_buffs_list(self) -> List[Dict[str, Any]]:
+        """获取当前激活的buff列表"""
+        try:
+            return json.loads(self.active_buffs) if self.active_buffs else []
+        except json.JSONDecodeError:
+            return []
+    
+    def set_active_buffs_list(self, buffs: List[Dict[str, Any]]):
+        """设置当前激活的buff列表"""
+        self.active_buffs = json.dumps(buffs)
+    
+    def add_buff(self, buff_type: str, value: int, duration: int):
+        """添加一个buff (duration为剩余战斗次数)"""
+        buffs = self.get_active_buffs_list()
+        # 检查是否已有同类型buff，如果有则刷新
+        for b in buffs:
+            if b.get("type") == buff_type:
+                b["value"] = max(b["value"], value)
+                b["duration"] = max(b["duration"], duration)
+                self.set_active_buffs_list(buffs)
+                return
+        # 添加新buff
+        buffs.append({"type": buff_type, "value": value, "duration": duration})
+        self.set_active_buffs_list(buffs)
+    
+    def consume_buff_duration(self):
+        """战斗后消耗buff持续次数，移除已过期的buff"""
+        buffs = self.get_active_buffs_list()
+        new_buffs = []
+        for b in buffs:
+            b["duration"] -= 1
+            if b["duration"] > 0:
+                new_buffs.append(b)
+        self.set_active_buffs_list(new_buffs)
+
     def get_combat_stats(self, config_manager: "ConfigManager") -> Dict[str, Any]:
-        """计算并返回玩家的最终战斗属性（基础属性+装备加成）"""
+        """计算并返回玩家的最终战斗属性（基础属性+装备加成+功法加成+buff加成）"""
         stats = {
             "hp": self.hp,
             "max_hp": self.max_hp,
@@ -77,8 +133,8 @@ class Player:
             "defense": self.defense,
         }
         
+        # 装备加成
         equipment_ids = [self.equipped_weapon, self.equipped_armor, self.equipped_accessory]
-        
         for item_id in equipment_ids:
             if item_id:
                 item = config_manager.item_data.get(str(item_id))
@@ -86,7 +142,33 @@ class Player:
                     for key, value in item.equip_effects.items():
                         if key in stats:
                             stats[key] += value
+        
+        # 功法永久加成
+        learned = self.get_learned_skills_list()
+        for skill_id in learned:
+            skill_item = config_manager.item_data.get(str(skill_id))
+            if skill_item and hasattr(skill_item, 'skill_effects') and skill_item.skill_effects:
+                for key, value in skill_item.skill_effects.items():
+                    if key in stats:
+                        stats[key] += value
+        
+        # Buff临时加成
+        for buff in self.get_active_buffs_list():
+            buff_type = buff.get("type", "")
+            buff_value = buff.get("value", 0)
+            if buff_type == "attack_buff":
+                stats["attack"] += buff_value
+            elif buff_type == "defense_buff":
+                stats["defense"] += buff_value
+            elif buff_type == "hp_buff":
+                stats["max_hp"] += buff_value
+        
         return stats
+    
+    def get_pvp_win_rate(self) -> float:
+        """获取PVP胜率"""
+        total = self.pvp_wins + self.pvp_losses
+        return (self.pvp_wins / total * 100) if total > 0 else 0.0
 
     def get_realm_instance(self) -> Optional[RealmInstance]:
         if not self.realm_data:

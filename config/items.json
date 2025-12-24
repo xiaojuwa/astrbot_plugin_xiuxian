@@ -36,8 +36,13 @@
         "name": "筑基丹",
         "type": "丹药",
         "rank": "珍品",
-        "description": "辅助突破至筑基期的关键丹药，能少量提升突破成功率（暂无实际效果）。",
-        "price": 2000
+        "description": "辅助突破的关键丹药，使用后获得攻击加成buff。",
+        "price": 2000,
+        "buff_effect": {
+            "type": "attack_buff",
+            "value": 30,
+            "duration": 5
+        }
     },
     "1005": {
         "name": "聚灵丹",
@@ -54,8 +59,13 @@
         "name": "大力丸",
         "type": "丹药",
         "rank": "凡品",
-        "description": "凡人所制的丹丸，据说能临时增长力气（暂无实际效果）。",
-        "price": 80
+        "description": "凡人所制的丹丸，能临时增长攻击力。",
+        "price": 80,
+        "buff_effect": {
+            "type": "attack_buff",
+            "value": 10,
+            "duration": 3
+        }
     },
     "1007": {
         "name": "五品凝神丹",
@@ -83,8 +93,13 @@
         "name": "破障丹",
         "type": "丹药",
         "rank": "圣品",
-        "description": "突破瓶颈时使用，能极大增加突破成功率（暂无实际效果）。",
-        "price": 25000
+        "description": "突破瓶颈时使用，大幅提升防御力。",
+        "price": 25000,
+        "buff_effect": {
+            "type": "defense_buff",
+            "value": 100,
+            "duration": 8
+        }
     },
     "1010": {
         "name": "金髓丹",
@@ -292,70 +307,106 @@
         "name": "长春功残篇",
         "type": "功法",
         "rank": "凡品",
-        "description": "一部基础的吐纳法门，修炼后可延年益寿。",
-        "price": 1000
+        "description": "一部基础的吐纳法门，修炼后永久增加生命上限。",
+        "price": 1000,
+        "skill_effects": {
+            "max_hp": 50
+        }
     },
     "4002": {
         "name": "焚天诀上卷",
         "type": "功法",
         "rank": "圣品",
-        "description": "传说中可焚尽万物的无上功法，此为上卷。",
-        "price": 888888
+        "description": "传说中可焚尽万物的无上功法，永久大幅提升攻击力。",
+        "price": 888888,
+        "skill_effects": {
+            "attack": 150
+        }
     },
     "4003": {
         "name": "他化自在大法",
         "type": "功法",
         "rank": "帝品",
-        "description": "无上秘法，可演化万物，神秘莫测。",
-        "price": 9999999
+        "description": "无上秘法，永久大幅提升攻击、防御、生命。",
+        "price": 9999999,
+        "skill_effects": {
+            "attack": 300,
+            "defense": 200,
+            "max_hp": 500
+        }
     },
     "4004": {
         "name": "不动明王经",
         "type": "功法",
         "rank": "珍品",
-        "description": "佛门无上炼体功法，修炼后肉身坚不可摧。",
-        "price": 10000
+        "description": "佛门炼体功法，永久提升防御和生命上限。",
+        "price": 10000,
+        "skill_effects": {
+            "defense": 30,
+            "max_hp": 100
+        }
     },
     "4005": {
         "name": "御风诀",
         "type": "功法",
         "rank": "凡品",
-        "description": "修炼后身轻如燕，提升移动速度（暂无实际效果）。",
-        "price": 1200
+        "description": "修炼后身轻如燕，永久提升攻击力。",
+        "price": 1200,
+        "skill_effects": {
+            "attack": 8
+        }
     },
     "4006": {
         "name": "龟息功",
         "type": "功法",
         "rank": "凡品",
-        "description": "模拟玄龟呼吸，修炼后气息绵长，提升耐力（暂无实际效果）。",
-        "price": 900
+        "description": "模拟玄龟呼吸，永久提升防御力。",
+        "price": 900,
+        "skill_effects": {
+            "defense": 8
+        }
     },
     "4007": {
         "name": "北冥神功",
         "type": "功法",
         "rank": "珍品",
-        "description": "能吸取他人修为化为己用，霸道无比（暂无实际效果）。",
-        "price": 25000
+        "description": "能吸取他人修为，永久大幅提升攻击力。",
+        "price": 25000,
+        "skill_effects": {
+            "attack": 50
+        }
     },
     "4008": {
         "name": "九阳神功",
         "type": "功法",
         "rank": "珍品",
-        "description": "至刚至阳的内功心法，百毒不侵。",
-        "price": 22000
+        "description": "至刚至阳的内功心法，永久提升生命和防御。",
+        "price": 22000,
+        "skill_effects": {
+            "max_hp": 150,
+            "defense": 25
+        }
     },
     "4009": {
         "name": "道经",
         "type": "功法",
         "rank": "帝品",
-        "description": "阐述了天地至理的无上经文，为万法之源。",
-        "price": 7777777
+        "description": "阐述了天地至理的无上经文，大幅提升全属性。",
+        "price": 7777777,
+        "skill_effects": {
+            "attack": 250,
+            "defense": 150,
+            "max_hp": 400
+        }
     },
     "4010": {
         "name": "吞天魔功",
         "type": "功法",
         "rank": "帝品",
-        "description": "魔道无上功法，吞噬万物本源，禁忌的存在。",
-        "price": 6666666
+        "description": "魔道无上功法，极大提升攻击力，禁忌的存在。",
+        "price": 6666666,
+        "skill_effects": {
+            "attack": 400
+        }
     }
 }

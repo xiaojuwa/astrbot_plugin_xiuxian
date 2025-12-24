@@ -455,3 +455,87 @@ class DataBase:
             ON CONFLICT(user_id, bounty_date) DO UPDATE SET count = count + 1
         """, (user_id, bounty_date))
         await self.conn.commit()
+
+    # ========== 交易系统相关方法 ==========
+
+    async def record_trade(self, from_user_id: str, to_user_id: str, trade_type: str,
+                          item_id: str = None, quantity: int = None, gold_amount: int = 0):
+        """记录交易日志"""
+        import time
+        await self.conn.execute("""
+            INSERT INTO trade_log (from_user_id, to_user_id, trade_type, item_id, quantity, gold_amount, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (from_user_id, to_user_id, trade_type, item_id, quantity, gold_amount, time.time()))
+        await self.conn.commit()
+
+    # ========== PVP排行榜相关方法 ==========
+
+    async def get_top_players_by_pvp(self, limit: int = 10) -> List[Player]:
+        """获取PVP排行榜（按胜场和胜率排序）"""
+        async with self.conn.execute(
+            "SELECT * FROM players WHERE pvp_wins + pvp_losses > 0 ORDER BY pvp_wins DESC, pvp_losses ASC LIMIT ?", 
+            (limit,)
+        ) as cursor:
+            rows = await cursor.fetchall()
+            return [Player(**dict(row)) for row in rows]
+
+    async def get_player_pvp_rank(self, user_id: str) -> int:
+        """获取玩家的PVP排名"""
+        player = await self.get_player_by_id(user_id)
+        if not player or (player.pvp_wins + player.pvp_losses == 0):
+            return 0
+        
+        async with self.conn.execute("""
+            SELECT COUNT(*) + 1 as rank FROM players
+            WHERE pvp_wins > (SELECT pvp_wins FROM players WHERE user_id = ?)
+            OR (pvp_wins = (SELECT pvp_wins FROM players WHERE user_id = ?)
+                AND pvp_losses < (SELECT pvp_losses FROM players WHERE user_id = ?))
+        """, (user_id, user_id, user_id)) as cursor:
+            row = await cursor.fetchone()
+            return row["rank"] if row else 0
+
+    # ========== 宗门扩展相关方法 ==========
+
+    async def donate_to_sect(self, user_id: str, sect_id: int, amount: int) -> bool:
+        """捐献灵石给宗门，增加贡献度和宗门资金"""
+        try:
+            await self.conn.execute("BEGIN")
+            # 扣除玩家灵石
+            cursor = await self.conn.execute(
+                "UPDATE players SET gold = gold - ?, sect_contribution = sect_contribution + ? WHERE user_id = ? AND gold >= ?",
+                (amount, amount, user_id, amount)
+            )
+            if cursor.rowcount == 0:
+                await self.conn.rollback()
+                return False
+            
+            # 增加宗门资金和经验
+            await self.conn.execute(
+                "UPDATE sects SET funds = funds + ?, exp = exp + ? WHERE id = ?",
+                (amount, amount // 10, sect_id)
+            )
+            await self.conn.commit()
+            return True
+        except Exception as e:
+            await self.conn.rollback()
+            logger.error(f"宗门捐献失败: {e}")
+            return False
+
+    async def get_sect_info(self, sect_id: int) -> Optional[Dict[str, Any]]:
+        """获取宗门详细信息（包含等级计算）"""
+        sect = await self.get_sect_by_id(sect_id)
+        if not sect:
+            return None
+        
+        # 计算宗门等级（每10000经验升一级）
+        exp = sect.get('exp', 0)
+        level = 1 + exp // 10000
+        
+        members = await self.get_sect_members(sect_id)
+        
+        return {
+            **sect,
+            'calculated_level': level,
+            'member_count': len(members),
+            'members': members
+        }

@@ -7,7 +7,7 @@ from .config_manager import ConfigManager
 from .handlers import (
     MiscHandler, PlayerHandler, ShopHandler, SectHandler, CombatHandler, RealmHandler,
     EquipmentHandler, RankingHandler, DailyTaskHandler, AdventureHandler, TribulationHandler,
-    BountyHandler
+    BountyHandler, TradeHandler
 )
 
 # 指令定义
@@ -61,11 +61,20 @@ CMD_BOUNTY_LIST = "悬赏榜"
 CMD_ACCEPT_BOUNTY = "接取悬赏"
 CMD_BOUNTY_STATUS = "悬赏状态"
 
+# v2.3.0 新增指令
+CMD_DUEL = "奇斗"
+CMD_PVP_RANKING = "PVP排行"
+CMD_TRANSFER = "转账"
+CMD_GIFT = "赠送"
+CMD_SECT_DONATE = "宗门捐献"
+CMD_MY_BUFF = "我的buff"
+CMD_MY_SKILLS = "我的功法"
+
 @register(
     "astrbot_plugin_xiuxian",
     "oldPeter616",
     "基于astrbot框架的文字修仙游戏",
-    "v2.2.0", # 版本号提升
+    "v2.3.0", # 版本号提升 - 功法/buff/奇斗/交易系统
     "https://github.com/oldPeter616/astrbot_plugin_xiuxian"
 )
 class XiuXianPlugin(Star):
@@ -91,6 +100,7 @@ class XiuXianPlugin(Star):
         self.adventure_handler = AdventureHandler(self.db, self.config, self.config_manager)
         self.tribulation_handler = TribulationHandler(self.db, self.config, self.config_manager)
         self.bounty_handler = BountyHandler(self.db, self.config, self.config_manager)
+        self.trade_handler = TradeHandler(self.db, self.config, self.config_manager)
 
         access_control_config = self.config.get("ACCESS_CONTROL", {})
         self.whitelist_groups = [str(g) for g in access_control_config.get("WHITELIST_GROUPS", [])]
@@ -403,3 +413,53 @@ class XiuXianPlugin(Star):
             await self._send_access_denied_message(event)
             return
         async for r in self.bounty_handler.handle_bounty_status(event): yield r
+
+    # --- v2.3.0 新增指令 ---
+    @filter.command(CMD_DUEL, "带灵石赌注的切磋")
+    async def handle_duel(self, event: AstrMessageEvent, bet_amount: int = 100):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.combat_handler.handle_duel(event, bet_amount): yield r
+
+    @filter.command(CMD_TRANSFER, "转账灵石给其他玩家")
+    async def handle_transfer(self, event: AstrMessageEvent, amount: int):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.trade_handler.handle_transfer(event, amount): yield r
+
+    @filter.command(CMD_GIFT, "赠送物品给其他玩家")
+    async def handle_gift(self, event: AstrMessageEvent, item_name: str, quantity: int = 1):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.trade_handler.handle_gift(event, item_name, quantity): yield r
+
+    @filter.command(CMD_PVP_RANKING, "查看PVP排行榜")
+    async def handle_pvp_ranking(self, event: AstrMessageEvent):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.ranking_handler.handle_pvp_ranking(event): yield r
+
+    @filter.command(CMD_SECT_DONATE, "向宗门捐献灵石")
+    async def handle_sect_donate(self, event: AstrMessageEvent, amount: int):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.sect_handler.handle_sect_donate(event, amount): yield r
+
+    @filter.command(CMD_MY_BUFF, "查看当前激活的buff")
+    async def handle_my_buff(self, event: AstrMessageEvent):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.player_handler.handle_my_buff(event): yield r
+
+    @filter.command(CMD_MY_SKILLS, "查看已学习的功法")
+    async def handle_my_skills(self, event: AstrMessageEvent):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.player_handler.handle_my_skills(event): yield r

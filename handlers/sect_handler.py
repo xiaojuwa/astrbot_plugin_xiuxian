@@ -82,3 +82,32 @@ class SectHandler:
             "--------------------------"
         )
         yield event.plain_result(reply_msg)
+
+    @player_required
+    async def handle_sect_donate(self, player: Player, event: AstrMessageEvent, amount: int):
+        """向宗门捐献灵石"""
+        if amount <= 0:
+            yield event.plain_result("捐献金额必须大于0。")
+            return
+        
+        if not player.sect_id:
+            yield event.plain_result("你尚未加入任何宗门，无法捐献。")
+            return
+        
+        if player.gold < amount:
+            yield event.plain_result(f"灵石不足！你只有 {player.gold} 灵石。")
+            return
+        
+        success = await self.db.donate_to_sect(player.user_id, player.sect_id, amount)
+        
+        if success:
+            # 重新获取玩家信息显示贡献度
+            updated_player = await self.db.get_player_by_id(player.user_id)
+            yield event.plain_result(
+                f"捐献成功！\n"
+                f"你向「{player.sect_name}」捐献了 {amount} 灵石\n"
+                f"你的宗门贡献度：{updated_player.sect_contribution}\n"
+                f"你的剩余灵石：{updated_player.gold}"
+            )
+        else:
+            yield event.plain_result("捐献失败，请稍后再试。")

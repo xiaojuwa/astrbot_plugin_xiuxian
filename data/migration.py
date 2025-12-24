@@ -5,7 +5,7 @@ from typing import Dict, Callable, Awaitable
 from astrbot.api import logger
 from ..config_manager import ConfigManager
 
-LATEST_DB_VERSION = 10 # 版本号提升
+LATEST_DB_VERSION = 11 # 版本号提升
 
 MIGRATION_TASKS: Dict[int, Callable[[aiosqlite.Connection, ConfigManager], Awaitable[None]]] = {}
 
@@ -31,7 +31,7 @@ class MigrationManager:
                 logger.info("未检测到数据库版本，将进行全新安装...")
                 await self.conn.execute("BEGIN")
                 # 使用最新的建表函数
-                await _create_all_tables_v10(self.conn)
+                await _create_all_tables_v11(self.conn)
                 await self.conn.execute("INSERT INTO db_info (version) VALUES (?)", (LATEST_DB_VERSION,))
                 await self.conn.commit()
                 logger.info(f"数据库已初始化到最新版本: v{LATEST_DB_VERSION}")
@@ -364,14 +364,80 @@ async def _upgrade_v9_to_v10(conn: aiosqlite.Connection, config_manager: ConfigM
 
     logger.info("v9 -> v10 数据库迁移完成！")
 
-async def _create_all_tables_v10(conn: aiosqlite.Connection):
-    """创建所有表（v10版本）"""
+@migration(11)
+async def _upgrade_v10_to_v11(conn: aiosqlite.Connection, config_manager: ConfigManager):
+    """v2.3.0: 添加功法、buff、PVP、交易、宗门扩展相关字段"""
+    logger.info("开始执行 v10 -> v11 数据库迁移...")
+
+    # 为 players 表添加新字段
+    async with conn.execute("PRAGMA table_info(players)") as cursor:
+        columns = [row['name'] for row in await cursor.fetchall()]
+        
+        # 功法系统 - 已学习的功法列表 (JSON)
+        if 'learned_skills' not in columns:
+            await conn.execute("ALTER TABLE players ADD COLUMN learned_skills TEXT DEFAULT '[]'")
+        
+        # Buff系统 - 当前激活的buff (JSON)
+        if 'active_buffs' not in columns:
+            await conn.execute("ALTER TABLE players ADD COLUMN active_buffs TEXT DEFAULT '[]'")
+        
+        # PVP统计
+        if 'pvp_wins' not in columns:
+            await conn.execute("ALTER TABLE players ADD COLUMN pvp_wins INTEGER NOT NULL DEFAULT 0")
+        if 'pvp_losses' not in columns:
+            await conn.execute("ALTER TABLE players ADD COLUMN pvp_losses INTEGER NOT NULL DEFAULT 0")
+        if 'last_pvp_time' not in columns:
+            await conn.execute("ALTER TABLE players ADD COLUMN last_pvp_time REAL NOT NULL DEFAULT 0")
+        
+        # 宗门贡献度
+        if 'sect_contribution' not in columns:
+            await conn.execute("ALTER TABLE players ADD COLUMN sect_contribution INTEGER NOT NULL DEFAULT 0")
+
+    # 为 sects 表添加新字段
+    async with conn.execute("PRAGMA table_info(sects)") as cursor:
+        sect_columns = [row['name'] for row in await cursor.fetchall()]
+        
+        if 'exp' not in sect_columns:
+            await conn.execute("ALTER TABLE sects ADD COLUMN exp INTEGER NOT NULL DEFAULT 0")
+        if 'announcement' not in sect_columns:
+            await conn.execute("ALTER TABLE sects ADD COLUMN announcement TEXT DEFAULT ''")
+
+    # 创建交易记录表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS trade_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            from_user_id TEXT NOT NULL,
+            to_user_id TEXT NOT NULL,
+            trade_type TEXT NOT NULL,
+            item_id TEXT,
+            quantity INTEGER,
+            gold_amount INTEGER,
+            created_at REAL NOT NULL,
+            FOREIGN KEY (from_user_id) REFERENCES players (user_id) ON DELETE CASCADE,
+            FOREIGN KEY (to_user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+
+    # 创建PVP冷却记录表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS pvp_cooldown (
+            user_id TEXT PRIMARY KEY,
+            last_pvp_time REAL NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+
+    logger.info("v10 -> v11 数据库迁移完成！")
+
+async def _create_all_tables_v11(conn: aiosqlite.Connection):
+    """创建所有表（v11版本）- 包含功法、buff、PVP、交易系统"""
     await conn.execute("CREATE TABLE IF NOT EXISTS db_info (version INTEGER NOT NULL)")
     await conn.execute("""
         CREATE TABLE IF NOT EXISTS sects (
             id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE,
             leader_id TEXT NOT NULL, level INTEGER NOT NULL DEFAULT 1,
-            funds INTEGER NOT NULL DEFAULT 0
+            funds INTEGER NOT NULL DEFAULT 0, exp INTEGER NOT NULL DEFAULT 0,
+            announcement TEXT DEFAULT ''
         )
     """)
     await conn.execute("""
@@ -382,6 +448,9 @@ async def _create_all_tables_v10(conn: aiosqlite.Connection):
             hp INTEGER NOT NULL, max_hp INTEGER NOT NULL, attack INTEGER NOT NULL, defense INTEGER NOT NULL,
             realm_id TEXT, realm_floor INTEGER NOT NULL DEFAULT 0, realm_data TEXT,
             equipped_weapon TEXT, equipped_armor TEXT, equipped_accessory TEXT,
+            learned_skills TEXT DEFAULT '[]', active_buffs TEXT DEFAULT '[]',
+            pvp_wins INTEGER NOT NULL DEFAULT 0, pvp_losses INTEGER NOT NULL DEFAULT 0,
+            last_pvp_time REAL NOT NULL DEFAULT 0, sect_contribution INTEGER NOT NULL DEFAULT 0,
             FOREIGN KEY (sect_id) REFERENCES sects (id) ON DELETE SET NULL
         )
     """)
@@ -467,6 +536,29 @@ async def _create_all_tables_v10(conn: aiosqlite.Connection):
             bounty_date TEXT NOT NULL,
             count INTEGER NOT NULL DEFAULT 0,
             UNIQUE(user_id, bounty_date),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+    # 交易记录表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS trade_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            from_user_id TEXT NOT NULL,
+            to_user_id TEXT NOT NULL,
+            trade_type TEXT NOT NULL,
+            item_id TEXT,
+            quantity INTEGER,
+            gold_amount INTEGER,
+            created_at REAL NOT NULL,
+            FOREIGN KEY (from_user_id) REFERENCES players (user_id) ON DELETE CASCADE,
+            FOREIGN KEY (to_user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+    # PVP冷却记录表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS pvp_cooldown (
+            user_id TEXT PRIMARY KEY,
+            last_pvp_time REAL NOT NULL,
             FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
         )
     """)
