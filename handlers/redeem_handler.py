@@ -23,11 +23,26 @@ class RedeemHandler:
         return self.config.get("REDEEM_CODES", [])
 
     def _find_redeem_code(self, code: str) -> dict:
-        """查找激活码配置"""
+        """查找激活码配置（仅配置文件）"""
         redeem_codes = self._get_redeem_codes()
         for redeem_config in redeem_codes:
             if redeem_config.get("code") == code:
                 return redeem_config
+        return None
+
+    async def _find_gm_redeem_code(self, code: str) -> dict:
+        """查找GM激活码（数据库）"""
+        gm_code = await self.db.get_gm_redeem_code(code)
+        if gm_code:
+            items = await self.db.get_gm_redeem_code_items(code)
+            return {
+                "code": gm_code["code"],
+                "gold": gm_code["gold"],
+                "exp": gm_code["exp"],
+                "max_uses": gm_code["max_uses"],
+                "description": gm_code["description"],
+                "items": items
+            }
         return None
 
     @player_required
@@ -35,8 +50,11 @@ class RedeemHandler:
         """处理激活码兑换"""
         user_id = event.get_sender_id()
         
-        # 查找激活码配置
+        # 先查找配置文件中的激活码，再查找GM数据库激活码
         redeem_config = self._find_redeem_code(code)
+        if not redeem_config:
+            redeem_config = await self._find_gm_redeem_code(code)
+        
         if not redeem_config:
             yield event.plain_result("此激活码不存在或已失效。")
             return

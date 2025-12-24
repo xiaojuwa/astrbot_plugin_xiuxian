@@ -5,7 +5,7 @@ from typing import Dict, Callable, Awaitable
 from astrbot.api import logger
 from ..config_manager import ConfigManager
 
-LATEST_DB_VERSION = 15 # v2.5.0 激活码系统 + 每日任务重构
+LATEST_DB_VERSION = 16 # v2.5.0 GM激活码管理系统
 
 MIGRATION_TASKS: Dict[int, Callable[[aiosqlite.Connection, ConfigManager], Awaitable[None]]] = {}
 
@@ -874,3 +874,34 @@ async def _upgrade_v13_to_v14(conn: aiosqlite.Connection, config_manager: Config
     """)
 
     logger.info("v13 -> v14 数据库迁移完成！激活码系统已添加。")
+
+@migration(15)
+async def _upgrade_v14_to_v15(conn: aiosqlite.Connection, config_manager: ConfigManager):
+    """v2.5.0: 添加GM激活码管理表"""
+    logger.info("开始执行 v14 -> v15 数据库迁移（GM激活码管理）...")
+
+    # 创建GM激活码表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS gm_redeem_codes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            code TEXT NOT NULL UNIQUE,
+            gold INTEGER DEFAULT 0,
+            exp INTEGER DEFAULT 0,
+            max_uses INTEGER DEFAULT 100,
+            description TEXT DEFAULT '',
+            created_at REAL NOT NULL
+        )
+    """)
+
+    # 创建GM激活码物品奖励表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS gm_redeem_code_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            code TEXT NOT NULL,
+            item_name TEXT NOT NULL,
+            quantity INTEGER DEFAULT 1,
+            FOREIGN KEY (code) REFERENCES gm_redeem_codes (code) ON DELETE CASCADE
+        )
+    """)
+
+    logger.info("v14 -> v15 数据库迁移完成！GM激活码管理系统已添加。")

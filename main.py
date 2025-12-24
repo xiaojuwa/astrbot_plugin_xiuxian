@@ -91,6 +91,10 @@ CMD_GM_VIEW_PLAYER = "GM查看玩家"
 CMD_GM_LIST_LEVELS = "GM境界列表"
 CMD_GM_LIST_ITEMS = "GM物品列表"
 CMD_GM_CLEAR_STATE = "GM清状态"
+CMD_GM_ADD_CODE = "GM添加激活码"
+CMD_GM_DEL_CODE = "GM删除激活码"
+CMD_GM_LIST_CODES = "GM激活码列表"
+CMD_GM_ADD_CODE_ITEM = "GM激活码加物品"
 
 # v2.5.0 激活码系统
 CMD_REDEEM = "橘的恩赐"
@@ -99,7 +103,7 @@ CMD_REDEEM = "橘的恩赐"
     "astrbot_plugin_xiuxian",
     "xiaojuwa",
     "基于astrbot框架的文字修仙游戏",
-    "v2.5.0", # 版本号提升 - GM管理员工具
+    "v2.5.1", # 版本号提升 - GM管理员工具
     "https://github.com/xiaojuwa/astrbot_plugin_xiuxian"
 )
 class XiuXianPlugin(Star):
@@ -646,6 +650,38 @@ class XiuXianPlugin(Star):
             await self._send_access_denied_message(event)
             return
         async for r in self.gm_handler.handle_gm_clear_state(event): yield r
+
+    @filter.permission_type(filter.PermissionType.ADMIN)
+    @filter.command(CMD_GM_ADD_CODE, "GM添加激活码")
+    async def handle_gm_add_code(self, event: AstrMessageEvent, code: str, gold: int = 0, exp: int = 0, max_uses: int = 100, description: str = ""):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.gm_handler.handle_gm_add_code(event, code, gold, exp, max_uses, description): yield r
+
+    @filter.permission_type(filter.PermissionType.ADMIN)
+    @filter.command(CMD_GM_DEL_CODE, "GM删除激活码")
+    async def handle_gm_del_code(self, event: AstrMessageEvent, code: str):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.gm_handler.handle_gm_del_code(event, code): yield r
+
+    @filter.permission_type(filter.PermissionType.ADMIN)
+    @filter.command(CMD_GM_LIST_CODES, "GM查看激活码列表")
+    async def handle_gm_list_codes(self, event: AstrMessageEvent):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.gm_handler.handle_gm_list_codes(event): yield r
+
+    @filter.permission_type(filter.PermissionType.ADMIN)
+    @filter.command(CMD_GM_ADD_CODE_ITEM, "GM为激活码添加物品")
+    async def handle_gm_add_code_item(self, event: AstrMessageEvent, code: str, item_name: str, quantity: int = 1):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.gm_handler.handle_gm_add_code_item(event, code, item_name, quantity): yield r
 
     # --- v2.5.0 激活码系统 ---
     @filter.command(CMD_REDEEM, "使用激活码领取奖励")

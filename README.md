@@ -1,7 +1,7 @@
 # AstrBot 文字修仙插件
 
 <p align="center">
-  <img src="https://img.shields.io/badge/版本-v2.5.0-blue" alt="Version">
+  <img src="https://img.shields.io/badge/版本-v2.5.1-blue" alt="Version">
   <img src="https://img.shields.io/badge/框架-AstrBot-green" alt="Framework">
   <img src="https://img.shields.io/badge/数据库版本-v15-orange" alt="DB Version">
   <img src="https://img.shields.io/badge/许可证-AGPL--3.0-red" alt="License">
@@ -166,6 +166,7 @@
 ### GM管理员指令 (v2.5.0新增)
 
 > 以下指令仅限管理员使用，用于游戏数据管理和调试
+> 默认管理员QQ：1733533842（可在配置中添加更多管理员）
 
 | 指令 | 说明 |
 |:-----|:-----|
@@ -179,6 +180,10 @@
 | `GM境界列表` | 查看所有境界及索引 |
 | `GM物品列表 [类型]` | 查看物品列表（可选类型筛选） |
 | `GM清状态 @玩家` | 清除玩家状态（解除闭关/秘境等） |
+| `GM添加激活码 <码> [灵石] [修为] [次数] [描述]` | 添加激活码 |
+| `GM删除激活码 <激活码>` | 删除激活码 |
+| `GM激活码列表` | 查看所有激活码 |
+| `GM激活码加物品 <激活码> <物品名> [数量]` | 为激活码添加物品奖励 |
 
 ### 激活码系统 (v2.5.0新增)
 
@@ -186,7 +191,7 @@
 |:-----|:-----|
 | `橘的恩赐 <激活码>` | 使用激活码领取奖励 |
 
-> 激活码由管理员在WebUI后台配置，可设置：激活码内容（支持中文）、最大使用次数、赠送灵石/修为/物品
+> 激活码可通过GM指令直接添加（推荐），也可在WebUI后台配置
 
 ---
 

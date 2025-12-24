@@ -800,3 +800,53 @@ class DataBase:
             (user_id, code, time.time())
         )
         await self.conn.commit()
+
+    # ========== GM激活码管理方法 ==========
+
+    async def add_gm_redeem_code(self, code: str, gold: int, exp: int, max_uses: int, description: str):
+        """添加GM激活码"""
+        import time
+        await self.conn.execute(
+            """INSERT INTO gm_redeem_codes (code, gold, exp, max_uses, description, created_at)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (code, gold, exp, max_uses, description, time.time())
+        )
+        await self.conn.commit()
+
+    async def get_gm_redeem_code(self, code: str) -> dict:
+        """获取GM激活码配置"""
+        async with self.conn.execute(
+            "SELECT * FROM gm_redeem_codes WHERE code = ?", (code,)
+        ) as cursor:
+            row = await cursor.fetchone()
+            return dict(row) if row else None
+
+    async def get_all_gm_redeem_codes(self) -> list:
+        """获取所有GM激活码"""
+        async with self.conn.execute(
+            "SELECT * FROM gm_redeem_codes ORDER BY created_at DESC"
+        ) as cursor:
+            rows = await cursor.fetchall()
+            return [dict(row) for row in rows]
+
+    async def delete_gm_redeem_code(self, code: str):
+        """删除GM激活码"""
+        await self.conn.execute("DELETE FROM gm_redeem_codes WHERE code = ?", (code,))
+        await self.conn.execute("DELETE FROM gm_redeem_code_items WHERE code = ?", (code,))
+        await self.conn.commit()
+
+    async def add_gm_redeem_code_item(self, code: str, item_name: str, quantity: int):
+        """为GM激活码添加物品奖励"""
+        await self.conn.execute(
+            "INSERT INTO gm_redeem_code_items (code, item_name, quantity) VALUES (?, ?, ?)",
+            (code, item_name, quantity)
+        )
+        await self.conn.commit()
+
+    async def get_gm_redeem_code_items(self, code: str) -> list:
+        """获取GM激活码的物品奖励列表"""
+        async with self.conn.execute(
+            "SELECT item_name, quantity FROM gm_redeem_code_items WHERE code = ?", (code,)
+        ) as cursor:
+            rows = await cursor.fetchall()
+            return [{"name": row["item_name"], "quantity": row["quantity"]} for row in rows]
