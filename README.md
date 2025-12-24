@@ -3,7 +3,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/版本-v2.5.0-blue" alt="Version">
   <img src="https://img.shields.io/badge/框架-AstrBot-green" alt="Framework">
-  <img src="https://img.shields.io/badge/数据库版本-v13-orange" alt="DB Version">
+  <img src="https://img.shields.io/badge/数据库版本-v14-orange" alt="DB Version">
   <img src="https://img.shields.io/badge/许可证-AGPL--3.0-red" alt="License">
 </p>
 
@@ -180,6 +180,14 @@
 | `GM物品列表 [类型]` | 查看物品列表（可选类型筛选） |
 | `GM清状态 @玩家` | 清除玩家状态（解除闭关/秘境等） |
 
+### 激活码系统 (v2.5.0新增)
+
+| 指令 | 说明 |
+|:-----|:-----|
+| `橘的恩赐 <激活码>` | 使用激活码领取奖励 |
+
+> 激活码由管理员在WebUI后台配置，可设置：激活码内容（支持中文）、最大使用次数、赠送灵石/修为/物品
+
 ---
 
 ## 游戏机制
@@ -331,6 +339,11 @@ astrbot_plugin_xiuxian/
   - 玩家数据重置
   - 玩家详情查看
   - 状态清除（解除闭关/秘境卡住）
+- **激活码系统（橘的恩赐）**：玩家补偿/福利发放系统
+  - 支持中文激活码
+  - 可配置最大使用次数
+  - 可赠送灵石、修为、物品
+  - WebUI后台可视化配置
 
 **新增指令：**
 - `GM加灵石 @玩家 <数额>` - 增减灵石
@@ -343,6 +356,7 @@ astrbot_plugin_xiuxian/
 - `GM境界列表` - 查看境界索引
 - `GM物品列表 [类型]` - 查看物品列表
 - `GM清状态 @玩家` - 清除玩家状态
+- `橘的恩赐 <激活码>` - 使用激活码领取奖励
 
 ### v2.4.0
 

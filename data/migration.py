@@ -5,7 +5,7 @@ from typing import Dict, Callable, Awaitable
 from astrbot.api import logger
 from ..config_manager import ConfigManager
 
-LATEST_DB_VERSION = 13 # v2.4.0 炼丹/炼器系统
+LATEST_DB_VERSION = 14 # v2.5.0 激活码系统
 
 MIGRATION_TASKS: Dict[int, Callable[[aiosqlite.Connection, ConfigManager], Awaitable[None]]] = {}
 
@@ -796,6 +796,17 @@ async def _create_all_tables_v11(conn: aiosqlite.Connection):
             FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
         )
     """)
+    # 激活码使用记录表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS redeem_code_usage (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            code TEXT NOT NULL,
+            used_at REAL NOT NULL,
+            UNIQUE(user_id, code),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
 
 @migration(15)
 async def _upgrade_v14_to_v15(conn: aiosqlite.Connection, config_manager: ConfigManager):
@@ -844,3 +855,22 @@ async def _upgrade_v14_to_v15(conn: aiosqlite.Connection, config_manager: Config
     """)
 
     logger.info("v14 -> v15 数据库迁移完成！每日任务系统已升级。")
+
+@migration(14)
+async def _upgrade_v13_to_v14(conn: aiosqlite.Connection, config_manager: ConfigManager):
+    """v2.5.0: 添加激活码使用记录表"""
+    logger.info("开始执行 v13 -> v14 数据库迁移（激活码系统）...")
+
+    # 创建激活码使用记录表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS redeem_code_usage (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            code TEXT NOT NULL,
+            used_at REAL NOT NULL,
+            UNIQUE(user_id, code),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+
+    logger.info("v13 -> v14 数据库迁移完成！激活码系统已添加。")

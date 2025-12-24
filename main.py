@@ -7,7 +7,7 @@ from .config_manager import ConfigManager
 from .handlers import (
     MiscHandler, PlayerHandler, ShopHandler, SectHandler, CombatHandler, RealmHandler,
     EquipmentHandler, RankingHandler, DailyTaskHandler, AdventureHandler, TribulationHandler,
-    BountyHandler, TradeHandler, CraftingHandler, GMHandler
+    BountyHandler, TradeHandler, CraftingHandler, GMHandler, RedeemHandler
 )
 
 # 指令定义
@@ -92,6 +92,9 @@ CMD_GM_LIST_LEVELS = "GM境界列表"
 CMD_GM_LIST_ITEMS = "GM物品列表"
 CMD_GM_CLEAR_STATE = "GM清状态"
 
+# v2.5.0 激活码系统
+CMD_REDEEM = "橘的恩赐"
+
 @register(
     "astrbot_plugin_xiuxian",
     "xiaojuwa",
@@ -125,6 +128,7 @@ class XiuXianPlugin(Star):
         self.trade_handler = TradeHandler(self.db, self.config, self.config_manager)
         self.crafting_handler = CraftingHandler(self.db, self.config, self.config_manager)
         self.gm_handler = GMHandler(self.db, self.config, self.config_manager)
+        self.redeem_handler = RedeemHandler(self.db, self.config, self.config_manager)
 
         # 注入每日任务处理器到各个处理器
         self.player_handler.set_daily_task_handler(self.daily_task_handler)
@@ -642,3 +646,11 @@ class XiuXianPlugin(Star):
             await self._send_access_denied_message(event)
             return
         async for r in self.gm_handler.handle_gm_clear_state(event): yield r
+
+    # --- v2.5.0 激活码系统 ---
+    @filter.command(CMD_REDEEM, "使用激活码领取奖励")
+    async def handle_redeem(self, event: AstrMessageEvent, code: str):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.redeem_handler.handle_redeem(event, code): yield r

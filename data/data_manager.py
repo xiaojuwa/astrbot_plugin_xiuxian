@@ -772,3 +772,31 @@ class DataBase:
             if not item or item['quantity'] < required:
                 missing.append(item_id)
         return len(missing) == 0, missing
+
+    # ========== 激活码系统相关方法 ==========
+
+    async def has_used_redeem_code(self, user_id: str, code: str) -> bool:
+        """检查玩家是否已使用过某激活码"""
+        async with self.conn.execute(
+            "SELECT 1 FROM redeem_code_usage WHERE user_id = ? AND code = ?",
+            (user_id, code)
+        ) as cursor:
+            return await cursor.fetchone() is not None
+
+    async def get_redeem_code_use_count(self, code: str) -> int:
+        """获取激活码已使用次数"""
+        async with self.conn.execute(
+            "SELECT COUNT(*) as count FROM redeem_code_usage WHERE code = ?",
+            (code,)
+        ) as cursor:
+            row = await cursor.fetchone()
+            return row["count"] if row else 0
+
+    async def record_redeem_code_use(self, user_id: str, code: str):
+        """记录激活码使用"""
+        import time
+        await self.conn.execute(
+            "INSERT INTO redeem_code_usage (user_id, code, used_at) VALUES (?, ?, ?)",
+            (user_id, code, time.time())
+        )
+        await self.conn.commit()

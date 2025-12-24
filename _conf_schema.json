@@ -148,5 +148,67 @@
         "hint": "存储玩家数据的SQLite数据库文件名。"
       }
     }
+  },
+  "REDEEM_CODES": {
+    "description": "激活码配置（橘的恩赐）",
+    "type": "list",
+    "default": [],
+    "hint": "配置激活码列表，每个激活码包含：code(激活码)、max_uses(最大使用次数)、rewards(奖励列表)。玩家使用「橘的恩赐 激活码」指令兑换。",
+    "items": {
+      "type": "object",
+      "items": {
+        "code": {
+          "description": "激活码",
+          "type": "string",
+          "default": "",
+          "hint": "激活码内容，支持中文，如：新年快乐2025"
+        },
+        "max_uses": {
+          "description": "最大使用次数",
+          "type": "int",
+          "default": 100,
+          "hint": "该激活码最多可被多少人使用，0表示无限制"
+        },
+        "gold": {
+          "description": "赠送灵石",
+          "type": "int",
+          "default": 0,
+          "hint": "兑换后赠送的灵石数量"
+        },
+        "exp": {
+          "description": "赠送修为",
+          "type": "int",
+          "default": 0,
+          "hint": "兑换后赠送的修为数量"
+        },
+        "items": {
+          "description": "赠送物品",
+          "type": "list",
+          "default": [],
+          "hint": "赠送的物品列表，格式：[{\"name\": \"物品名\", \"quantity\": 数量}]",
+          "items": {
+            "type": "object",
+            "items": {
+              "name": {
+                "description": "物品名称",
+                "type": "string",
+                "default": ""
+              },
+              "quantity": {
+                "description": "数量",
+                "type": "int",
+                "default": 1
+              }
+            }
+          }
+        },
+        "description": {
+          "description": "激活码描述",
+          "type": "string",
+          "default": "",
+          "hint": "激活码的描述信息，会在兑换成功时显示"
+        }
+      }
+    }
   }
 }
