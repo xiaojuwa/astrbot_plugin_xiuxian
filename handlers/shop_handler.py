@@ -48,7 +48,7 @@ class ShopHandler:
         self.config = config
 
     async def handle_shop(self, event: AstrMessageEvent):
-        reply_msg = f"--- 仙途坊市 ({datetime.now().strftime('%Y-%m-%d')}) ---\n"
+        today = datetime.now().strftime('%Y-%m-%d')
         
         # 获取所有可售卖的商品
         all_sellable_items = [item for item in self.config_manager.item_data.values() if item.price > 0]
@@ -57,26 +57,97 @@ class ShopHandler:
         item_count = self.config["VALUES"].get("SHOP_DAILY_ITEM_COUNT", 8)
 
         if not all_sellable_items:
-            reply_msg += "今日坊市暂无商品。\n"
-        else:
-            # 使用当天日期作为随机种子，确保每日商品固定
-            today_seed = int(datetime.now().strftime('%Y%m%d'))
-            rng = random.Random(today_seed)
-            
-            # 如果商品总数小于等于设定数量，则全部显示
-            if len(all_sellable_items) <= item_count:
-                daily_items = all_sellable_items
-            else:
-                daily_items = rng.sample(all_sellable_items, item_count)
-            
-            sorted_items = sorted(daily_items, key=lambda item: item.price)
-
-            for info in sorted_items:
-                reply_msg += f"【{info.name}】售价：{info.price} 灵石\n"
+            yield event.plain_result("今日坊市暂无商品。")
+            return
         
-        reply_msg += "------------------\n"
-        reply_msg += f"使用「{CMD_BUY} <物品名> [数量]」进行购买。"
-        yield event.plain_result(reply_msg)
+        # 确保每日商城必有回血药
+        healing_items = [item for item in all_sellable_items 
+                        if item.effect and item.effect.get("type") == "add_hp"]
+        other_items = [item for item in all_sellable_items 
+                      if item not in healing_items]
+        
+        # 使用当天日期作为随机种子，确保每日商品固定
+        today_seed = int(datetime.now().strftime('%Y%m%d'))
+        rng = random.Random(today_seed)
+        
+        # 必定包含1-2个回血药，剩余随机
+        daily_items = []
+        if healing_items:
+            heal_count = min(2, len(healing_items))
+            daily_items.extend(rng.sample(healing_items, heal_count))
+        
+        remaining_count = item_count - len(daily_items)
+        if remaining_count > 0 and other_items:
+            sample_count = min(remaining_count, len(other_items))
+            daily_items.extend(rng.sample(other_items, sample_count))
+        
+        sorted_items = sorted(daily_items, key=lambda item: item.price)
+
+        lines = [f"─── 坊市 {today} ───"]
+        
+        for info in sorted_items:
+            effect_desc = self._get_item_effect_desc(info)
+            lines.append(f"【{info.name}】{info.price}灵石")
+            lines.append(f"  {effect_desc}")
+        
+        lines.append("───────────────")
+        lines.append(f"「{CMD_BUY} <名> [数量]」购买")
+        
+        yield event.plain_result("\n".join(lines))
+
+    def _get_item_effect_desc(self, item: Item) -> str:
+        """获取物品效果的简短描述"""
+        parts = [f"[{item.rank}]"]
+        
+        # 丹药效果
+        if item.effect:
+            effect_type = item.effect.get("type", "")
+            value = item.effect.get("value", 0)
+            if effect_type == "add_hp":
+                parts.append(f"❤️恢复{value}生命")
+            elif effect_type == "add_experience":
+                parts.append(f"📈+{value}修为")
+            elif effect_type == "add_gold":
+                parts.append(f"💰+{value}灵石")
+        
+        # 丹药Buff
+        if item.buff_effect:
+            buff_type = item.buff_effect.get("type", "")
+            value = item.buff_effect.get("value", 0)
+            duration = item.buff_effect.get("duration", 0)
+            buff_names = {"attack_buff": "攻击", "defense_buff": "防御", "hp_buff": "生命"}
+            buff_name = buff_names.get(buff_type, "属性")
+            parts.append(f"💫{buff_name}+{value}({duration}场战斗)")
+        
+        # 装备效果
+        if item.equip_effects:
+            effects = []
+            if item.equip_effects.get("attack"):
+                effects.append(f"⚔️+{item.equip_effects['attack']}")
+            if item.equip_effects.get("defense"):
+                effects.append(f"🛡️+{item.equip_effects['defense']}")
+            if item.equip_effects.get("max_hp"):
+                effects.append(f"❤️+{item.equip_effects['max_hp']}")
+            if effects:
+                parts.append(" ".join(effects))
+        
+        # 功法效果
+        if item.skill_effects:
+            effects = []
+            if item.skill_effects.get("attack"):
+                effects.append(f"⚔️永久+{item.skill_effects['attack']}")
+            if item.skill_effects.get("defense"):
+                effects.append(f"🛡️永久+{item.skill_effects['defense']}")
+            if item.skill_effects.get("max_hp"):
+                effects.append(f"❤️永久+{item.skill_effects['max_hp']}")
+            if effects:
+                parts.append(" ".join(effects))
+        
+        # 材料类无效果
+        if len(parts) == 1 and item.type == "材料":
+            parts.append("炼器/炼丹材料")
+        
+        return " ".join(parts)
 
     @player_required
     async def handle_backpack(self, player: Player, event: AstrMessageEvent):
