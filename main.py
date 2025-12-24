@@ -573,7 +573,7 @@ class XiuXianPlugin(Star):
     # --- v2.5.0 GM管理员指令 ---
     @filter.permission_type(filter.PermissionType.ADMIN)
     @filter.command(CMD_GM_ADD_GOLD, "GM添加灵石")
-    async def handle_gm_add_gold(self, event: AstrMessageEvent, amount: int):
+    async def handle_gm_add_gold(self, event: AstrMessageEvent, amount: str = ""):
         if not self._check_access(event):
             await self._send_access_denied_message(event)
             return
@@ -581,7 +581,7 @@ class XiuXianPlugin(Star):
 
     @filter.permission_type(filter.PermissionType.ADMIN)
     @filter.command(CMD_GM_ADD_EXP, "GM添加修为")
-    async def handle_gm_add_exp(self, event: AstrMessageEvent, amount: int):
+    async def handle_gm_add_exp(self, event: AstrMessageEvent, amount: str = ""):
         if not self._check_access(event):
             await self._send_access_denied_message(event)
             return
@@ -589,7 +589,7 @@ class XiuXianPlugin(Star):
 
     @filter.permission_type(filter.PermissionType.ADMIN)
     @filter.command(CMD_GM_SET_LEVEL, "GM设置境界")
-    async def handle_gm_set_level(self, event: AstrMessageEvent, level_index: int):
+    async def handle_gm_set_level(self, event: AstrMessageEvent, level_index: str = ""):
         if not self._check_access(event):
             await self._send_access_denied_message(event)
             return
@@ -597,7 +597,7 @@ class XiuXianPlugin(Star):
 
     @filter.permission_type(filter.PermissionType.ADMIN)
     @filter.command(CMD_GM_ADD_ITEM, "GM添加物品")
-    async def handle_gm_add_item(self, event: AstrMessageEvent, item_name: str, quantity: int = 1):
+    async def handle_gm_add_item(self, event: AstrMessageEvent, item_name: str = "", quantity: str = "1"):
         if not self._check_access(event):
             await self._send_access_denied_message(event)
             return
@@ -605,7 +605,7 @@ class XiuXianPlugin(Star):
 
     @filter.permission_type(filter.PermissionType.ADMIN)
     @filter.command(CMD_GM_SET_HP, "GM设置生命值")
-    async def handle_gm_set_hp(self, event: AstrMessageEvent, hp: int):
+    async def handle_gm_set_hp(self, event: AstrMessageEvent, hp: str = ""):
         if not self._check_access(event):
             await self._send_access_denied_message(event)
             return

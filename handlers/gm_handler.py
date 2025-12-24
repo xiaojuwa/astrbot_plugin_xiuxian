@@ -36,53 +36,72 @@ class GMHandler:
                 return str(comp.qq)
         return ""
 
-    async def handle_gm_add_gold(self, event: AstrMessageEvent, amount: int):
+    async def handle_gm_add_gold(self, event: AstrMessageEvent, amount: str):
         """GM添加灵石"""
         target_id = self._parse_at_user(event)
         if not target_id:
             yield event.plain_result("请@一个玩家，例如：GM加灵石 @玩家 1000")
             return
         
+        # 解析数值
+        try:
+            amount_int = int(amount)
+        except (ValueError, TypeError):
+            yield event.plain_result("请输入有效的数额，例如：GM加灵石 @玩家 1000")
+            return
+        
         player = await self.db.get_player_by_id(target_id)
         if not player:
             yield event.plain_result("目标玩家尚未踏入仙途。")
             return
         
-        player.gold += amount
+        player.gold += amount_int
         if player.gold < 0:
             player.gold = 0
         await self.db.update_player(player)
         
-        action = "增加" if amount >= 0 else "扣除"
-        logger.info(f"[GM] 管理员 {event.get_sender_id()} 为玩家 {target_id} {action}了 {abs(amount)} 灵石")
-        yield event.plain_result(f"✅ 已为玩家{action} {abs(amount)} 灵石\n当前灵石：{player.gold}")
+        action = "增加" if amount_int >= 0 else "扣除"
+        logger.info(f"[GM] 管理员 {event.get_sender_id()} 为玩家 {target_id} {action}了 {abs(amount_int)} 灵石")
+        yield event.plain_result(f"✅ 已为玩家{action} {abs(amount_int)} 灵石\n当前灵石：{player.gold}")
 
-    async def handle_gm_add_exp(self, event: AstrMessageEvent, amount: int):
+    async def handle_gm_add_exp(self, event: AstrMessageEvent, amount: str):
         """GM添加修为"""
         target_id = self._parse_at_user(event)
         if not target_id:
             yield event.plain_result("请@一个玩家，例如：GM加修为 @玩家 10000")
             return
         
+        try:
+            amount_int = int(amount)
+        except (ValueError, TypeError):
+            yield event.plain_result("请输入有效的数额，例如：GM加修为 @玩家 10000")
+            return
+        
         player = await self.db.get_player_by_id(target_id)
         if not player:
             yield event.plain_result("目标玩家尚未踏入仙途。")
             return
         
-        player.experience += amount
+        player.experience += amount_int
         if player.experience < 0:
             player.experience = 0
         await self.db.update_player(player)
         
-        action = "增加" if amount >= 0 else "扣除"
-        logger.info(f"[GM] 管理员 {event.get_sender_id()} 为玩家 {target_id} {action}了 {abs(amount)} 修为")
-        yield event.plain_result(f"✅ 已为玩家{action} {abs(amount)} 修为\n当前修为：{player.experience}")
+        action = "增加" if amount_int >= 0 else "扣除"
+        logger.info(f"[GM] 管理员 {event.get_sender_id()} 为玩家 {target_id} {action}了 {abs(amount_int)} 修为")
+        yield event.plain_result(f"✅ 已为玩家{action} {abs(amount_int)} 修为\n当前修为：{player.experience}")
 
-    async def handle_gm_set_level(self, event: AstrMessageEvent, level_index: int):
+    async def handle_gm_set_level(self, event: AstrMessageEvent, level_index: str):
         """GM设置境界"""
         target_id = self._parse_at_user(event)
         if not target_id:
             yield event.plain_result("请@一个玩家，例如：GM设境界 @玩家 10")
+            return
+        
+        try:
+            level_index_int = int(level_index)
+        except (ValueError, TypeError):
+            yield event.plain_result("请输入有效的境界索引，例如：GM设境界 @玩家 10")
             return
         
         player = await self.db.get_player_by_id(target_id)
@@ -91,14 +110,14 @@ class GMHandler:
             return
         
         max_level = len(self.config_manager.level_data) - 1
-        if level_index < 0 or level_index > max_level:
+        if level_index_int < 0 or level_index_int > max_level:
             yield event.plain_result(f"境界索引无效，有效范围：0-{max_level}")
             return
         
         old_level = player.get_level(self.config_manager)
-        player.level_index = level_index
+        player.level_index = level_index_int
         
-        level_config = self.config_manager.level_data[level_index]
+        level_config = self.config_manager.level_data[level_index_int]
         player.max_hp = level_config.get("base_hp", 100)
         player.hp = player.max_hp
         player.attack = level_config.get("base_attack", 10)
@@ -110,11 +129,17 @@ class GMHandler:
         logger.info(f"[GM] 管理员 {event.get_sender_id()} 将玩家 {target_id} 境界从 {old_level} 修改为 {new_level}")
         yield event.plain_result(f"✅ 已将玩家境界修改为：{new_level}\n基础属性已同步更新")
 
-    async def handle_gm_add_item(self, event: AstrMessageEvent, item_name: str, quantity: int = 1):
+    async def handle_gm_add_item(self, event: AstrMessageEvent, item_name: str, quantity: str = "1"):
         """GM添加物品"""
         target_id = self._parse_at_user(event)
         if not target_id:
             yield event.plain_result("请@一个玩家，例如：GM加物品 @玩家 聚气丹 10")
+            return
+        
+        try:
+            quantity_int = int(quantity)
+        except (ValueError, TypeError):
+            yield event.plain_result("请输入有效的数量，例如：GM加物品 @玩家 聚气丹 10")
             return
         
         player = await self.db.get_player_by_id(target_id)
@@ -134,20 +159,26 @@ class GMHandler:
             yield event.plain_result(f"未找到物品「{item_name}」")
             return
         
-        if quantity <= 0:
+        if quantity_int <= 0:
             yield event.plain_result("数量必须大于0")
             return
         
-        await self.db.add_items_to_inventory_in_transaction(target_id, {item_id: quantity})
+        await self.db.add_items_to_inventory_in_transaction(target_id, {item_id: quantity_int})
         
-        logger.info(f"[GM] 管理员 {event.get_sender_id()} 为玩家 {target_id} 添加了 {quantity}x {item_name}")
-        yield event.plain_result(f"✅ 已为玩家添加 {quantity}x「{item_name}」({item_data.rank})")
+        logger.info(f"[GM] 管理员 {event.get_sender_id()} 为玩家 {target_id} 添加了 {quantity_int}x {item_name}")
+        yield event.plain_result(f"✅ 已为玩家添加 {quantity_int}x「{item_name}」({item_data.rank})")
 
-    async def handle_gm_set_hp(self, event: AstrMessageEvent, hp: int):
+    async def handle_gm_set_hp(self, event: AstrMessageEvent, hp: str):
         """GM设置生命值"""
         target_id = self._parse_at_user(event)
         if not target_id:
             yield event.plain_result("请@一个玩家，例如：GM设生命 @玩家 1000")
+            return
+        
+        try:
+            hp_int = int(hp)
+        except (ValueError, TypeError):
+            yield event.plain_result("请输入有效的生命值，例如：GM设生命 @玩家 1000")
             return
         
         player = await self.db.get_player_by_id(target_id)
@@ -155,11 +186,11 @@ class GMHandler:
             yield event.plain_result("目标玩家尚未踏入仙途。")
             return
         
-        if hp < 0:
+        if hp_int < 0:
             yield event.plain_result("生命值不能为负数")
             return
         
-        player.hp = min(hp, player.max_hp)
+        player.hp = min(hp_int, player.max_hp)
         await self.db.update_player(player)
         
         logger.info(f"[GM] 管理员 {event.get_sender_id()} 将玩家 {target_id} 生命值设为 {player.hp}")
