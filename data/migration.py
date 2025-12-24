@@ -5,7 +5,7 @@ from typing import Dict, Callable, Awaitable
 from astrbot.api import logger
 from ..config_manager import ConfigManager
 
-LATEST_DB_VERSION = 11 # 版本号提升
+LATEST_DB_VERSION = 12 # 修复v11迁移遗漏的v2.2.0表
 
 MIGRATION_TASKS: Dict[int, Callable[[aiosqlite.Connection, ConfigManager], Awaitable[None]]] = {}
 
@@ -427,7 +427,159 @@ async def _upgrade_v10_to_v11(conn: aiosqlite.Connection, config_manager: Config
         )
     """)
 
+    # ===== v2.2.0 缺失的表（奇遇/每日任务/悬赏系统） =====
+    
+    # 奇遇记录表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS adventure_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            adventure_date TEXT NOT NULL,
+            adventure_type TEXT NOT NULL,
+            result TEXT,
+            reward_gold INTEGER DEFAULT 0,
+            reward_exp INTEGER DEFAULT 0,
+            created_at REAL NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+    
+    # 玩家每日奇遇次数限制
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS daily_adventure_count (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            adventure_date TEXT NOT NULL,
+            count INTEGER NOT NULL DEFAULT 0,
+            UNIQUE(user_id, adventure_date),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+    
+    # 玩家每日悬赏任务次数限制
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS daily_bounty_count (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            bounty_date TEXT NOT NULL,
+            count INTEGER NOT NULL DEFAULT 0,
+            UNIQUE(user_id, bounty_date),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+    
+    # 每日任务进度表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS daily_task_progress (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            task_date TEXT NOT NULL,
+            task_id TEXT NOT NULL,
+            completed INTEGER NOT NULL DEFAULT 0,
+            UNIQUE(user_id, task_date, task_id),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+    
+    # 每日任务奖励领取记录
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS daily_task_claimed (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            claim_date TEXT NOT NULL,
+            task_id TEXT NOT NULL,
+            UNIQUE(user_id, claim_date, task_id),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+    
+    # 全勤奖励领取记录
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS daily_bonus_claimed (
+            user_id TEXT NOT NULL,
+            claim_date TEXT NOT NULL,
+            UNIQUE(user_id, claim_date),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+
     logger.info("v10 -> v11 数据库迁移完成！")
+
+@migration(12)
+async def _upgrade_v11_to_v12(conn: aiosqlite.Connection, config_manager: ConfigManager):
+    """v2.3.1: 修复v11迁移遗漏的v2.2.0表（奇遇/每日任务/悬赏系统）"""
+    logger.info("开始执行 v11 -> v12 数据库迁移...")
+
+    # 创建可能缺失的表（IF NOT EXISTS保证幂等性）
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS adventure_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            adventure_date TEXT NOT NULL,
+            adventure_type TEXT NOT NULL,
+            result TEXT,
+            reward_gold INTEGER DEFAULT 0,
+            reward_exp INTEGER DEFAULT 0,
+            created_at REAL NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+    
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS daily_adventure_count (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            adventure_date TEXT NOT NULL,
+            count INTEGER NOT NULL DEFAULT 0,
+            UNIQUE(user_id, adventure_date),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+    
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS daily_bounty_count (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            bounty_date TEXT NOT NULL,
+            count INTEGER NOT NULL DEFAULT 0,
+            UNIQUE(user_id, bounty_date),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+    
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS daily_task_progress (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            task_date TEXT NOT NULL,
+            task_id TEXT NOT NULL,
+            completed INTEGER NOT NULL DEFAULT 0,
+            UNIQUE(user_id, task_date, task_id),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+    
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS daily_task_claimed (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            claim_date TEXT NOT NULL,
+            task_id TEXT NOT NULL,
+            UNIQUE(user_id, claim_date, task_id),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+    
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS daily_bonus_claimed (
+            user_id TEXT NOT NULL,
+            claim_date TEXT NOT NULL,
+            UNIQUE(user_id, claim_date),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+
+    logger.info("v11 -> v12 数据库迁移完成！")
 
 async def _create_all_tables_v11(conn: aiosqlite.Connection):
     """创建所有表（v11版本）- 包含功法、buff、PVP、交易系统"""
