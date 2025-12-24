@@ -127,6 +127,14 @@
         "price": 12000,
         "effect": {"type": "add_experience", "value": 8000}
     },
+    "1017": {
+        "name": "逆天改命丹",
+        "type": "丹药",
+        "rank": "帝品",
+        "description": "传说中的逆天神丹，服用后可重塑灵根，获得全新天赋。",
+        "price": 50000,
+        "effect": {"type": "reroll_spirit_root"}
+    },
     "2001": {
         "name": "精铁",
         "type": "材料",

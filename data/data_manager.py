@@ -454,6 +454,67 @@ class DataBase:
         )
         await self.conn.commit()
 
+    async def get_task_counter(self, user_id: str, task_date: str, task_id: str) -> int:
+        """获取任务进度计数器（用于需要多次完成的任务）"""
+        async with self.conn.execute(
+            "SELECT progress FROM daily_task_counter WHERE user_id = ? AND task_date = ? AND task_id = ?",
+            (user_id, task_date, task_id)
+        ) as cursor:
+            row = await cursor.fetchone()
+            return row["progress"] if row else 0
+
+    async def set_task_counter(self, user_id: str, task_date: str, task_id: str, progress: int):
+        """设置任务进度计数器"""
+        await self.conn.execute("""
+            INSERT INTO daily_task_counter (user_id, task_date, task_id, progress)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(user_id, task_date, task_id) DO UPDATE SET progress = ?
+        """, (user_id, task_date, task_id, progress, progress))
+        await self.conn.commit()
+
+    async def get_check_in_streak(self, user_id: str) -> int:
+        """获取连续签到天数"""
+        async with self.conn.execute(
+            "SELECT streak FROM check_in_streak WHERE user_id = ?",
+            (user_id,)
+        ) as cursor:
+            row = await cursor.fetchone()
+            return row["streak"] if row else 0
+
+    async def update_check_in_streak(self, user_id: str, streak: int, last_date: str):
+        """更新连续签到记录"""
+        await self.conn.execute("""
+            INSERT INTO check_in_streak (user_id, streak, last_check_in_date)
+            VALUES (?, ?, ?)
+            ON CONFLICT(user_id) DO UPDATE SET streak = ?, last_check_in_date = ?
+        """, (user_id, streak, last_date, streak, last_date))
+        await self.conn.commit()
+
+    async def get_last_check_in_date(self, user_id: str) -> Optional[str]:
+        """获取上次签到日期"""
+        async with self.conn.execute(
+            "SELECT last_check_in_date FROM check_in_streak WHERE user_id = ?",
+            (user_id,)
+        ) as cursor:
+            row = await cursor.fetchone()
+            return row["last_check_in_date"] if row else None
+
+    async def is_streak_reward_claimed(self, user_id: str, streak: int) -> bool:
+        """检查连续签到奖励是否已领取"""
+        async with self.conn.execute(
+            "SELECT 1 FROM streak_reward_claimed WHERE user_id = ? AND streak_milestone = ?",
+            (user_id, streak)
+        ) as cursor:
+            return await cursor.fetchone() is not None
+
+    async def mark_streak_reward_claimed(self, user_id: str, streak: int):
+        """标记连续签到奖励已领取"""
+        await self.conn.execute(
+            "INSERT OR IGNORE INTO streak_reward_claimed (user_id, streak_milestone) VALUES (?, ?)",
+            (user_id, streak)
+        )
+        await self.conn.commit()
+
     # ========== 奇遇系统相关方法 ==========
 
     async def get_daily_adventure_count(self, user_id: str, adventure_date: str) -> int:

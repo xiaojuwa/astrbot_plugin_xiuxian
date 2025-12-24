@@ -93,6 +93,11 @@ class AdventureHandler:
         self.db = db
         self.config = config
         self.config_manager = config_manager
+        self.daily_task_handler = None  # 延迟注入
+    
+    def set_daily_task_handler(self, handler):
+        """注入每日任务处理器"""
+        self.daily_task_handler = handler
 
     @player_required
     async def handle_adventure(self, player: Player, event: AstrMessageEvent):
@@ -145,7 +150,7 @@ class AdventureHandler:
                 rarity_prefix = "🌟【稀有奇遇】🌟\n"
 
             lines = [
-                f"{rarity_prefix}═══ 【{adventure['name']}】 ═══",
+                f"{rarity_prefix}━━ {adventure['name']} ━━",
                 "",
                 adventure["description"],
                 "",
@@ -160,8 +165,14 @@ class AdventureHandler:
             lines.extend([
                 "",
                 f"今日剩余奇遇次数: {remaining}/{self.MAX_DAILY_ADVENTURES}",
-                "═══════════════════"
+                "━━━━━━━━━━━━"
             ])
+
+            # 完成每日任务
+            if self.daily_task_handler:
+                completed = await self.daily_task_handler.complete_task(player.user_id, "adventure")
+                if completed:
+                    lines.append("\n🎯 每日任务「奇遇探索」已完成！")
 
             yield event.plain_result("\n".join(lines))
         except Exception as e:
@@ -198,13 +209,13 @@ class AdventureHandler:
         remaining = max(0, self.MAX_DAILY_ADVENTURES - current_count)
 
         lines = [
-            "═══ 【奇遇状态】 ═══",
+            "━━ 奇遇状态 ━━",
             f"📅 日期: {today}",
             f"🎲 今日已探索: {current_count} 次",
             f"✨ 剩余次数: {remaining} 次",
             "",
             "💡 使用「奇遇」指令开始探索",
-            "═══════════════════"
+            "━━━━━━━━━━━━"
         ]
 
         yield event.plain_result("\n".join(lines))

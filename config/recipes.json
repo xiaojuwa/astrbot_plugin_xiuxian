@@ -175,6 +175,17 @@
             "required_level": 5,
             "required_realm": 10,
             "exp_reward": 12
+        },
+        "r_1017": {
+            "name": "逆天改命丹方",
+            "output_id": "1017",
+            "output_min": 1,
+            "output_max": 1,
+            "materials": {"2032": 2, "2027": 3, "2026": 2, "2034": 3},
+            "base_success_rate": 0.10,
+            "required_level": 8,
+            "required_realm": 15,
+            "exp_reward": 50
         }
     },
     "smithing": {

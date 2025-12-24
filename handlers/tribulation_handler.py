@@ -88,7 +88,7 @@ class TribulationHandler:
                 next_tribulation_level = level
                 break
 
-        lines = ["═══ 【天劫信息】 ═══", ""]
+        lines = ["━━ 天劫信息 ━━", ""]
 
         if next_tribulation_level:
             trib_info = TRIBULATION_LEVELS[next_tribulation_level]
@@ -117,7 +117,7 @@ class TribulationHandler:
             status = "✅" if current_level >= level else "⬜"
             lines.append(f"{status} {info['name']} - {level_name} ({info['waves']}波)")
 
-        lines.append("═══════════════════")
+        lines.append("━━━━━━━━━━━━")
         yield event.plain_result("\n".join(lines))
 
     @player_required
@@ -148,7 +148,7 @@ class TribulationHandler:
     async def _process_tribulation(self, player: Player, tribulation: Dict) -> str:
         """处理天劫过程"""
         lines = [
-            f"═══ 【{tribulation['name']}】 ═══",
+            f"━━ {tribulation['name']} ━━",
             "",
             tribulation["description"],
             "",
@@ -217,7 +217,7 @@ class TribulationHandler:
             ])
 
         await self.db.update_player(p_clone)
-        lines.append("═══════════════════")
+        lines.append("━━━━━━━━━━━━")
 
         return "\n".join(lines)
 

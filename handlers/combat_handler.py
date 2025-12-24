@@ -26,6 +26,11 @@ class CombatHandler:
         self.config = config
         self.config_manager = config_manager
         self.battle_manager = BattleManager(db, config, config_manager)
+        self.daily_task_handler = None  # 延迟注入
+    
+    def set_daily_task_handler(self, handler):
+        """注入每日任务处理器"""
+        self.daily_task_handler = handler
 
     def _get_mentioned_user(self, event: AstrMessageEvent):
         """从消息中获取被@的用户ID和名字"""
@@ -105,6 +110,15 @@ class CombatHandler:
         
         await self.db.update_player(a_clone)
         await self.db.update_player(d_clone)
+        
+        # 完成每日任务（双方都完成）
+        if self.daily_task_handler:
+            completed_a = await self.daily_task_handler.complete_task(attacker.user_id, "spar")
+            completed_d = await self.daily_task_handler.complete_task(defender.user_id, "spar")
+            if completed_a:
+                report_lines.append(f"\n🎯 {attacker_name} 完成每日任务「以武会友」！")
+            if completed_d:
+                report_lines.append(f"\n🎯 {defender_name or '对方'} 完成每日任务「以武会友」！")
         
         yield event.plain_result("\n".join(report_lines))
 
@@ -201,6 +215,15 @@ class CombatHandler:
         await self.db.update_player(a_clone)
         await self.db.update_player(d_clone)
         
+        # 完成每日任务（双方都完成）
+        if self.daily_task_handler:
+            completed_a = await self.daily_task_handler.complete_task(attacker.user_id, "duel")
+            completed_d = await self.daily_task_handler.complete_task(defender.user_id, "duel")
+            if completed_a:
+                report_lines.append(f"\n🎯 {attacker_name} 完成每日任务「奇斗赌局」！")
+            if completed_d:
+                report_lines.append(f"\n🎯 {defender_name or '对方'} 完成每日任务「奇斗赌局」！")
+        
         yield event.plain_result("\n".join(report_lines))
 
     async def handle_boss_list(self, event: AstrMessageEvent):
@@ -238,5 +261,11 @@ class CombatHandler:
         p_clone = player.clone()
         p_clone.consume_buff_duration()
         await self.db.update_player(p_clone)
+        
+        # 完成每日任务
+        if self.daily_task_handler:
+            completed = await self.daily_task_handler.complete_task(player.user_id, "boss_fight")
+            if completed:
+                result_msg += "\n🎯 每日任务「斩妖除魔」已完成！"
         
         yield event.plain_result(result_msg)

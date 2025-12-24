@@ -1,4 +1,5 @@
 # handlers/player_handler.py
+from datetime import date, timedelta
 from astrbot.api.event import AstrMessageEvent
 from astrbot.api import AstrBotConfig
 from ..data import DataBase
@@ -21,6 +22,11 @@ class PlayerHandler:
         self.config = config
         self.config_manager = config_manager
         self.cultivation_manager = CultivationManager(config, config_manager)
+        self.daily_task_handler = None  # 延迟注入
+    
+    def set_daily_task_handler(self, handler):
+        """注入每日任务处理器"""
+        self.daily_task_handler = handler
 
     async def handle_start_xiuxian(self, event: AstrMessageEvent):
         user_id = event.get_sender_id()
@@ -29,6 +35,8 @@ class PlayerHandler:
             return
 
         new_player = self.cultivation_manager.generate_new_player_stats(user_id)
+        # 保存初始昵称
+        new_player.nickname = event.get_sender_name() or ""
         await self.db.create_player(new_player)
         reply_msg = (
             f"恭喜道友 {event.get_sender_name()} 踏上仙途！\n"
@@ -78,7 +86,38 @@ class PlayerHandler:
     async def handle_check_in(self, player: Player, event: AstrMessageEvent):
         success, msg, updated_player = self.cultivation_manager.handle_check_in(player)
         if success and updated_player:
+            # 更新昵称
+            sender_name = event.get_sender_name()
+            if sender_name and sender_name != updated_player.nickname:
+                updated_player.nickname = sender_name
+            
             await self.db.update_player(updated_player)
+            
+            # 更新连续签到记录
+            today = date.today().isoformat()
+            last_check_in = await self.db.get_last_check_in_date(player.user_id)
+            
+            if last_check_in:
+                last_date = date.fromisoformat(last_check_in)
+                today_date = date.today()
+                if (today_date - last_date).days == 1:
+                    # 连续签到
+                    current_streak = await self.db.get_check_in_streak(player.user_id)
+                    new_streak = current_streak + 1
+                else:
+                    # 断签，重新开始
+                    new_streak = 1
+            else:
+                new_streak = 1
+            
+            await self.db.update_check_in_streak(player.user_id, new_streak, today)
+            
+            # 完成每日任务
+            if self.daily_task_handler:
+                completed = await self.daily_task_handler.complete_task(player.user_id, "check_in")
+                if completed:
+                    msg += "\n🎯 每日任务「晨钟暮鼓」已完成！"
+        
         yield event.plain_result(msg)
 
     @player_required
@@ -93,6 +132,13 @@ class PlayerHandler:
         success, msg, updated_player = self.cultivation_manager.handle_end_cultivation(player)
         if success and updated_player:
             await self.db.update_player(updated_player)
+            
+            # 完成每日任务
+            if self.daily_task_handler:
+                completed = await self.daily_task_handler.complete_task(player.user_id, "cultivation")
+                if completed:
+                    msg += "\n🎯 每日任务「闭关修炼」已完成！"
+        
         yield event.plain_result(msg)
 
     @player_required

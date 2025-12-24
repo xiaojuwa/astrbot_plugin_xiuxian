@@ -113,6 +113,17 @@ class XiuXianPlugin(Star):
         self.trade_handler = TradeHandler(self.db, self.config, self.config_manager)
         self.crafting_handler = CraftingHandler(self.db, self.config, self.config_manager)
 
+        # 注入每日任务处理器到各个处理器
+        self.player_handler.set_daily_task_handler(self.daily_task_handler)
+        self.combat_handler.set_daily_task_handler(self.daily_task_handler)
+        self.realm_handler.set_daily_task_handler(self.daily_task_handler)
+        self.adventure_handler.set_daily_task_handler(self.daily_task_handler)
+        self.bounty_handler.set_daily_task_handler(self.daily_task_handler)
+        self.shop_handler.set_daily_task_handler(self.daily_task_handler)
+        self.sect_handler.set_daily_task_handler(self.daily_task_handler)
+        self.crafting_handler.set_daily_task_handler(self.daily_task_handler)
+        self.trade_handler.set_daily_task_handler(self.daily_task_handler)
+
         access_control_config = self.config.get("ACCESS_CONTROL", {})
         self.whitelist_groups = [str(g) for g in access_control_config.get("WHITELIST_GROUPS", [])]
         

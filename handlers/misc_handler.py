@@ -67,6 +67,16 @@ CMD_SECT_DONATE = "宗门捐献"
 CMD_MY_BUFF = "我的buff"
 CMD_MY_SKILLS = "我的功法"
 
+# v2.4.0 炼丹/炼器系统指令
+CMD_ALCHEMY = "炼丹"
+CMD_SMITHING = "炼器"
+CMD_UPGRADE_FURNACE = "升级丹炉"
+CMD_UPGRADE_FORGE = "升级炼器台"
+CMD_RECIPE_INFO = "配方"
+CMD_RECIPE_LIST = "配方图鉴"
+CMD_MATERIALS = "材料图鉴"
+CMD_SELL = "出售"
+
 __all__ = ["MiscHandler"]
 
 
@@ -78,7 +88,7 @@ class MiscHandler:
 
     async def handle_help(self, event: AstrMessageEvent):
         help_text = (
-            "═══════ 寻仙指令手册 ═══════\n"
+            "━━ 修仙指令手册 ━━\n"
             "\n"
             "【入门指引】\n"
             f"  {CMD_START_XIUXIAN} - 开启修仙之旅\n"
@@ -90,6 +100,13 @@ class MiscHandler:
             f"  {CMD_END_CULTIVATION} - 结束闭关\n"
             f"  {CMD_BREAKTHROUGH} - 尝试突破境界\n"
             f"  {CMD_REROLL_SPIRIT_ROOT} - 重置灵根\n"
+            "\n"
+            "【灵根概率】(修炼速度)\n"
+            "  五行灵根 55.6% (1.0x)\n"
+            "  变异灵根 11.1% (1.2x)\n"
+            "  天灵根 11.1% (1.5x)\n"
+            "  融合灵根 11.1% (1.8x)\n"
+            "  混沌灵根 11.1% (2.0x)\n"
             "\n"
             "【坊市物品】\n"
             f"  {CMD_SHOP} - 查看坊市商品\n"
@@ -145,6 +162,16 @@ class MiscHandler:
             f"  {CMD_TRANSFER} @某人 <数额> - 转账灵石\n"
             f"  {CMD_GIFT} @某人 <物品> - 赠送物品\n"
             "\n"
-            "═══════════════════════════"
+            "【炼丹/炼器】\n"
+            f"  {CMD_ALCHEMY} [配方名] - 炼丹界面/炼制\n"
+            f"  {CMD_SMITHING} [配方名] - 炼器界面/炼制\n"
+            f"  {CMD_UPGRADE_FURNACE} - 升级丹炉\n"
+            f"  {CMD_UPGRADE_FORGE} - 升级炼器台\n"
+            f"  {CMD_RECIPE_INFO} <配方名> - 查看配方详情\n"
+            f"  {CMD_RECIPE_LIST} - 查看所有配方\n"
+            f"  {CMD_MATERIALS} - 查看材料图鉴\n"
+            f"  {CMD_SELL} <物品> [数量] - 出售物品\n"
+            "\n"
+            "━━━━━━━━━━━━"
         )
         yield event.plain_result(help_text)

@@ -796,3 +796,51 @@ async def _create_all_tables_v11(conn: aiosqlite.Connection):
             FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
         )
     """)
+
+@migration(15)
+async def _upgrade_v14_to_v15(conn: aiosqlite.Connection, config_manager: ConfigManager):
+    """v2.5.0: 每日任务系统重构 - 添加连续签到、任务进度计数器、玩家昵称等"""
+    logger.info("开始执行 v14 -> v15 数据库迁移（每日任务系统重构）...")
+
+    # 为 players 表添加 nickname 字段
+    try:
+        await conn.execute("ALTER TABLE players ADD COLUMN nickname TEXT DEFAULT ''")
+    except aiosqlite.OperationalError:
+        pass  # 字段已存在
+
+    # 任务进度计数器表（用于需要多次完成的任务）
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS daily_task_counter (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            task_date TEXT NOT NULL,
+            task_id TEXT NOT NULL,
+            progress INTEGER NOT NULL DEFAULT 0,
+            UNIQUE(user_id, task_date, task_id),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+
+    # 连续签到记录表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS check_in_streak (
+            user_id TEXT PRIMARY KEY,
+            streak INTEGER NOT NULL DEFAULT 0,
+            last_check_in_date TEXT,
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+
+    # 连续签到奖励领取记录
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS streak_reward_claimed (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            streak_milestone INTEGER NOT NULL,
+            claimed_at REAL DEFAULT (strftime('%s', 'now')),
+            UNIQUE(user_id, streak_milestone),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+
+    logger.info("v14 -> v15 数据库迁移完成！每日任务系统已升级。")

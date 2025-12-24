@@ -20,6 +20,11 @@ class TradeHandler:
         self.db = db
         self.config = config
         self.config_manager = config_manager
+        self.daily_task_handler = None  # 延迟注入
+    
+    def set_daily_task_handler(self, handler):
+        """注入每日任务处理器"""
+        self.daily_task_handler = handler
     
     def _get_mentioned_user(self, event: AstrMessageEvent):
         """从消息中获取被@的用户ID"""
@@ -86,12 +91,20 @@ class TradeHandler:
         await self.db.record_trade(player.user_id, target_user_id, "transfer", None, None, amount)
         
         tax_info = f"（扣除{int(tax_rate*100)}%交易税{tax}灵石）" if tax > 0 else ""
-        yield event.plain_result(
+        msg = (
             f"转账成功！\n"
             f"你向对方转账了 {amount} 灵石{tax_info}\n"
             f"对方实际收到 {actual_amount} 灵石\n"
             f"你的余额：{p_clone.gold} 灵石"
         )
+        
+        # 完成每日任务
+        if self.daily_task_handler:
+            completed = await self.daily_task_handler.complete_task(player.user_id, "transfer")
+            if completed:
+                msg += "\n🎯 每日任务「乐善好施」已完成！"
+        
+        yield event.plain_result(msg)
 
     @player_required
     async def handle_gift(self, player: Player, event: AstrMessageEvent):
@@ -159,7 +172,12 @@ class TradeHandler:
         # 记录交易日志
         await self.db.record_trade(player.user_id, target_user_id, "gift", item_id, quantity, 0)
         
-        yield event.plain_result(
-            f"赠送成功！\n"
-            f"你向对方赠送了「{item_name}」x{quantity}"
-        )
+        msg = f"赠送成功！\n你向对方赠送了「{item_name}」x{quantity}"
+        
+        # 完成每日任务
+        if self.daily_task_handler:
+            completed = await self.daily_task_handler.complete_task(player.user_id, "transfer")
+            if completed:
+                msg += "\n🎯 每日任务「乐善好施」已完成！"
+        
+        yield event.plain_result(msg)

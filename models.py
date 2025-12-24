@@ -81,6 +81,9 @@ class Player:
     furnace_level: int = 1      # 丹炉等级
     forge_level: int = 1        # 炼器台等级
     unlocked_recipes: str = "[]"  # JSON存储已解锁配方ID列表
+    
+    # v2.5.0 昵称
+    nickname: str = ""          # 玩家昵称（群昵称）
 
     def get_level(self, config_manager: "ConfigManager") -> str:
         if 0 <= self.level_index < len(config_manager.level_data):

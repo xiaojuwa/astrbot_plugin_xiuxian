@@ -49,6 +49,11 @@ class ShopHandler:
         self.db = db
         self.config_manager = config_manager
         self.config = config
+        self.daily_task_handler = None  # 延迟注入
+    
+    def set_daily_task_handler(self, handler):
+        """注入每日任务处理器"""
+        self.daily_task_handler = handler
 
     async def handle_shop(self, event: AstrMessageEvent):
         today = datetime.now().strftime('%Y-%m-%d')
@@ -183,10 +188,17 @@ class ShopHandler:
 
         if success:
             updated_player = await self.db.get_player_by_id(player.user_id)
+            msg = f"购买成功！花费{total_cost}灵石，购得「{item_name}」x{quantity}。"
             if updated_player:
-                yield event.plain_result(f"购买成功！花费{total_cost}灵石，购得「{item_name}」x{quantity}。剩余灵石 {updated_player.gold}。")
-            else:
-                yield event.plain_result(f"购买成功！花费{total_cost}灵石，购得「{item_name}」x{quantity}。")
+                msg += f"剩余灵石 {updated_player.gold}。"
+            
+            # 完成每日任务
+            if self.daily_task_handler:
+                completed = await self.daily_task_handler.complete_task(player.user_id, "shop_buy")
+                if completed:
+                    msg += "\n🎯 每日任务「仙市淘宝」已完成！"
+            
+            yield event.plain_result(msg)
         else:
             if reason == "ERROR_INSUFFICIENT_FUNDS":
                 yield event.plain_result(f"灵石不足！购买 {quantity}个「{item_name}」需{total_cost}灵石，你只有{player.gold}。")
@@ -242,7 +254,15 @@ class ShopHandler:
                 await self.db.add_items_to_inventory_in_transaction(player.user_id, {unequipped_item_id: 1})
             
             await self.db.update_player(p_clone)
-            yield event.plain_result(f"已成功装备【{item_name}】。")
+            msg = f"已成功装备【{item_name}】。"
+            
+            # 完成每日任务
+            if self.daily_task_handler:
+                completed = await self.daily_task_handler.complete_task(player.user_id, "use_item")
+                if completed:
+                    msg += "\n🎯 每日任务「丹药养生」已完成！"
+            
+            yield event.plain_result(msg)
 
         elif target_item_info.type == "功法":
             # 学习功法 - 永久属性加成
@@ -275,7 +295,15 @@ class ShopHandler:
                     effect_lines.append(f"{stat_name}+{value}")
             
             effect_msg = "，".join(effect_lines) if effect_lines else "属性提升"
-            yield event.plain_result(f"恭喜！你成功修炼了「{item_name}」！\n永久获得：{effect_msg}")
+            msg = f"恭喜！你成功修炼了「{item_name}」！\n永久获得：{effect_msg}"
+            
+            # 完成每日任务
+            if self.daily_task_handler:
+                completed = await self.daily_task_handler.complete_task(player.user_id, "use_item")
+                if completed:
+                    msg += "\n🎯 每日任务「丹药养生」已完成！"
+            
+            yield event.plain_result(msg)
 
         elif target_item_info.buff_effect:
             # 丹药buff - 临时属性加成
@@ -294,12 +322,56 @@ class ShopHandler:
             
             buff_names = {"attack_buff": "攻击", "defense_buff": "防御", "hp_buff": "生命上限"}
             buff_name = buff_names.get(buff_type, "未知")
-            yield event.plain_result(
+            msg = (
                 f"你使用了 {quantity} 个「{item_name}」！\n"
                 f"获得buff：{buff_name}+{buff_value}，持续{buff_duration}场战斗"
             )
+            
+            # 完成每日任务
+            if self.daily_task_handler:
+                completed = await self.daily_task_handler.complete_task(player.user_id, "use_item")
+                if completed:
+                    msg += "\n🎯 每日任务「丹药养生」已完成！"
+            
+            yield event.plain_result(msg)
 
         elif target_item_info.effect:
+            effect_type = target_item_info.effect.get("type")
+            
+            # 特殊效果：重置灵根
+            if effect_type == "reroll_spirit_root":
+                if quantity > 1:
+                    yield event.plain_result("逆天改命丹每次只能使用一颗。")
+                    return
+                
+                # 消耗物品
+                await self.db.remove_item_from_inventory(player.user_id, target_item_id, 1)
+                
+                # 重置灵根
+                import random
+                root_types = ["金", "木", "水", "火", "土", "异", "天", "融合", "混沌"]
+                old_root = player.spiritual_root
+                new_root_name = random.choice(root_types)
+                
+                p_clone = player.clone()
+                p_clone.spiritual_root = f"{new_root_name}灵根"
+                await self.db.update_player(p_clone)
+                
+                msg = (
+                    f"你服下了「{item_name}」，体内灵气翻涌！\n"
+                    f"原有的「{old_root}」已化为全新的「{p_clone.spiritual_root}」！\n"
+                    f"祝道友仙途坦荡，大道可期！"
+                )
+                
+                # 完成每日任务
+                if self.daily_task_handler:
+                    completed = await self.daily_task_handler.complete_task(player.user_id, "use_item")
+                    if completed:
+                        msg += "\n🎯 每日任务「丹药养生」已完成！"
+                
+                yield event.plain_result(msg)
+                return
+            
             # 消耗品 - 直接效果
             effect, msg = calculate_item_effect(target_item_info, quantity)
             if not effect:
@@ -309,6 +381,11 @@ class ShopHandler:
             success = await self.db.transactional_apply_item_effect(player.user_id, target_item_id, quantity, effect)
 
             if success:
+                # 完成每日任务
+                if self.daily_task_handler:
+                    completed = await self.daily_task_handler.complete_task(player.user_id, "use_item")
+                    if completed:
+                        msg += "\n🎯 每日任务「丹药养生」已完成！"
                 yield event.plain_result(msg)
             else:
                 yield event.plain_result(f"使用失败！可能发生了未知错误。")

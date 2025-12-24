@@ -19,12 +19,24 @@ class RealmHandler:
         self.config = config
         self.config_manager = config_manager
         self.realm_manager = RealmManager(db, config, config_manager)
+        self.daily_task_handler = None  # 延迟注入
+    
+    def set_daily_task_handler(self, handler):
+        """注入每日任务处理器"""
+        self.daily_task_handler = handler
 
     @player_required
     async def handle_enter_realm(self, player: Player, event: AstrMessageEvent):
         success, msg, updated_player = await self.realm_manager.start_session(player, CMD_REALM_ADVANCE)
         if success and updated_player:
             await self.db.update_player(updated_player)
+            
+            # 完成每日任务
+            if self.daily_task_handler:
+                completed = await self.daily_task_handler.complete_task(player.user_id, "realm_explore")
+                if completed:
+                    msg += "\n🎯 每日任务「秘境探险」已完成！"
+        
         yield event.plain_result(msg)
 
     @player_required
@@ -46,6 +58,12 @@ class RealmHandler:
                 item_log.append(f"【{item_name}】x{qty}")
             if item_log:
                 msg += "\n获得物品：" + ", ".join(item_log)
+
+        # 更新每日任务进度（秘境深入需要前进3层）
+        if success and self.daily_task_handler:
+            completed, task_msg = await self.daily_task_handler.add_task_progress(player.user_id, "realm_advance", 1)
+            if task_msg:
+                msg += f"\n{task_msg}"
 
         yield event.plain_result(msg)
 

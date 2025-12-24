@@ -20,6 +20,11 @@ class CraftingHandler:
         self.config = config
         self.config_manager = config_manager
         self.crafting_manager = CraftingManager(db, config, config_manager)
+        self.daily_task_handler = None  # 延迟注入
+    
+    def set_daily_task_handler(self, handler):
+        """注入每日任务处理器"""
+        self.daily_task_handler = handler
 
     @player_required
     async def handle_alchemy(self, player: Player, event: AstrMessageEvent):
@@ -48,7 +53,7 @@ class CraftingHandler:
                 available_recipes.append(f"  {recipe.get('name')} → {output_name}")
         
         lines = [
-            "═══ 【炼丹界面】 ═══",
+            "━━ 炼丹界面 ━━",
             f"🔥 丹炉：{furnace_name} (Lv.{player.furnace_level})",
             f"📜 炼丹师：{title} (Lv.{player.alchemy_level})",
             f"📊 熟练度：{exp_text}",
@@ -60,7 +65,7 @@ class CraftingHandler:
             "  「炼丹 <配方名>」炼制丹药",
             "  「升级丹炉」升级丹炉",
             "  「配方 <配方名>」查看配方详情",
-            "═══════════════════"
+            "━━━━━━━━━━━━"
         ]
         
         yield event.plain_result("\n".join(lines))
@@ -92,7 +97,7 @@ class CraftingHandler:
                 available_recipes.append(f"  {recipe.get('name')} → {output_name}")
         
         lines = [
-            "═══ 【炼器界面】 ═══",
+            "━━ 炼器界面 ━━",
             f"🔨 炼器台：{forge_name} (Lv.{player.forge_level})",
             f"📜 炼器师：{title} (Lv.{player.smithing_level})",
             f"📊 熟练度：{exp_text}",
@@ -104,7 +109,7 @@ class CraftingHandler:
             "  「炼器 <配方名>」炼制法器",
             "  「升级炼器台」升级炼器台",
             "  「配方 <配方名>」查看配方详情",
-            "═══════════════════"
+            "━━━━━━━━━━━━"
         ]
         
         yield event.plain_result("\n".join(lines))
@@ -131,6 +136,13 @@ class CraftingHandler:
             return
         
         success, msg, _ = await self.crafting_manager.craft_item(player, recipe_id, "alchemy")
+        
+        # 完成每日任务
+        if success and self.daily_task_handler:
+            completed = await self.daily_task_handler.complete_task(player.user_id, "alchemy")
+            if completed:
+                msg += "\n🎯 每日任务「炼丹一炉」已完成！"
+        
         yield event.plain_result(msg)
 
     @player_required
@@ -155,6 +167,13 @@ class CraftingHandler:
             return
         
         success, msg, _ = await self.crafting_manager.craft_item(player, recipe_id, "smithing")
+        
+        # 完成每日任务
+        if success and self.daily_task_handler:
+            completed = await self.daily_task_handler.complete_task(player.user_id, "smithing")
+            if completed:
+                msg += "\n🎯 每日任务「锻造神兵」已完成！"
+        
         yield event.plain_result(msg)
 
     @player_required
@@ -194,7 +213,7 @@ class CraftingHandler:
         alchemy_recipes = self.config_manager.get_all_recipes("alchemy")
         smithing_recipes = self.config_manager.get_all_recipes("smithing")
         
-        lines = ["═══ 【配方图鉴】 ═══", "", "--- 炼丹配方 ---"]
+        lines = ["━━ 配方图鉴 ━━", "", "--- 炼丹配方 ---"]
         
         for recipe_id, recipe in alchemy_recipes.items():
             req_level = recipe.get("required_level", 1)
@@ -214,7 +233,7 @@ class CraftingHandler:
             output_name = output_item.name if output_item else "未知"
             lines.append(f"[{can_craft}] {recipe.get('name')} → {output_name} (需Lv.{req_level})")
         
-        lines.append("═══════════════════")
+        lines.append("━━━━━━━━━━━━")
         yield event.plain_result("\n".join(lines))
 
     @player_required
@@ -225,7 +244,7 @@ class CraftingHandler:
         
         rank_order = {"凡品": 0, "珍品": 1, "圣品": 2, "帝品": 3}
         
-        lines = ["═══ 【材料图鉴】 ═══"]
+        lines = ["━━ 材料图鉴 ━━"]
         current_rank = None
         
         for item in materials:
@@ -234,5 +253,5 @@ class CraftingHandler:
                 lines.append(f"\n--- {current_rank} ---")
             lines.append(f"「{item.name}」{item.price}灵石 - {item.description[:20]}...")
         
-        lines.append("\n═══════════════════")
+        lines.append("\n━━━━━━━━━━━━")
         yield event.plain_result("\n".join(lines))

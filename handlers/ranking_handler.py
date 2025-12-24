@@ -17,6 +17,12 @@ class RankingHandler:
         self.db = db
         self.config_manager = config_manager
 
+    def _get_display_name(self, player: Player) -> str:
+        """获取玩家显示名称（优先昵称，否则显示ID后4位）"""
+        if player.nickname:
+            return player.nickname
+        return f"修士{player.user_id[-4:]}"
+
     async def handle_realm_ranking(self, event: AstrMessageEvent):
         """境界排行榜 - 按境界和修为排序"""
         players = await self.db.get_top_players_by_realm(limit=10)
@@ -24,13 +30,14 @@ class RankingHandler:
             yield event.plain_result("仙界尚无修士，道友可成为第一人！")
             return
 
-        lines = ["═══ 【境界排行榜】 ═══"]
+        lines = ["━━ 境界排行榜 ━━"]
         for i, player in enumerate(players, 1):
             level_name = player.get_level(self.config_manager)
             medal = self._get_medal(i)
-            lines.append(f"{medal} {i}. {player.user_id[:8]}... | {level_name} | 修为:{player.experience}")
+            name = self._get_display_name(player)
+            lines.append(f"{medal} {i}. {name} | {level_name} | 修为:{player.experience}")
 
-        lines.append("═══════════════════")
+        lines.append("━━━━━━━━━━━━")
         yield event.plain_result("\n".join(lines))
 
     async def handle_wealth_ranking(self, event: AstrMessageEvent):
@@ -40,12 +47,13 @@ class RankingHandler:
             yield event.plain_result("仙界尚无修士，道友可成为第一人！")
             return
 
-        lines = ["═══ 【财富排行榜】 ═══"]
+        lines = ["━━ 财富排行榜 ━━"]
         for i, player in enumerate(players, 1):
             medal = self._get_medal(i)
-            lines.append(f"{medal} {i}. {player.user_id[:8]}... | {player.gold} 灵石")
+            name = self._get_display_name(player)
+            lines.append(f"{medal} {i}. {name} | {player.gold} 灵石")
 
-        lines.append("═══════════════════")
+        lines.append("━━━━━━━━━━━━")
         yield event.plain_result("\n".join(lines))
 
     async def handle_combat_ranking(self, event: AstrMessageEvent):
@@ -55,13 +63,14 @@ class RankingHandler:
             yield event.plain_result("仙界尚无修士，道友可成为第一人！")
             return
 
-        lines = ["═══ 【战力排行榜】 ═══"]
+        lines = ["━━ 战力排行榜 ━━"]
         for i, (player, combat_power) in enumerate(players, 1):
             level_name = player.get_level(self.config_manager)
             medal = self._get_medal(i)
-            lines.append(f"{medal} {i}. {player.user_id[:8]}... | {level_name} | 战力:{combat_power}")
+            name = self._get_display_name(player)
+            lines.append(f"{medal} {i}. {name} | {level_name} | 战力:{combat_power}")
 
-        lines.append("═══════════════════")
+        lines.append("━━━━━━━━━━━━")
         yield event.plain_result("\n".join(lines))
 
     @player_required
@@ -72,11 +81,11 @@ class RankingHandler:
         combat_rank = await self.db.get_player_combat_rank(player.user_id, self.config_manager)
 
         lines = [
-            f"═══ 道友 {event.get_sender_name()} 的排名 ═══",
+            f"━━ 道友 {event.get_sender_name()} 的排名 ━━",
             f"境界排名: 第 {realm_rank} 名",
             f"财富排名: 第 {wealth_rank} 名",
             f"战力排名: 第 {combat_rank} 名",
-            "═══════════════════════════"
+            "━━━━━━━━━━━━"
         ]
         yield event.plain_result("\n".join(lines))
 
@@ -87,15 +96,15 @@ class RankingHandler:
             yield event.plain_result("尚无修士参与过切磋，快去挑战其他道友吧！")
             return
 
-        lines = ["═══ 【PVP排行榜】 ═══"]
+        lines = ["━━ PVP排行榜 ━━"]
         for i, player in enumerate(players, 1):
-            level_name = player.get_level(self.config_manager)
             medal = self._get_medal(i)
+            name = self._get_display_name(player)
             total = player.pvp_wins + player.pvp_losses
             win_rate = f"{player.get_pvp_win_rate():.1f}%" if total > 0 else "0%"
-            lines.append(f"{medal} {i}. {player.user_id[:8]}... | {player.pvp_wins}胜{player.pvp_losses}负 | 胜率:{win_rate}")
+            lines.append(f"{medal} {i}. {name} | {player.pvp_wins}胜{player.pvp_losses}负 | 胜率:{win_rate}")
 
-        lines.append("═══════════════════")
+        lines.append("━━━━━━━━━━━━")
         yield event.plain_result("\n".join(lines))
 
     def _get_medal(self, rank: int) -> str:

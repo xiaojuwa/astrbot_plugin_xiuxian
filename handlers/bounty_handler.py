@@ -106,6 +106,11 @@ class BountyHandler:
         self.db = db
         self.config = config
         self.config_manager = config_manager
+        self.daily_task_handler = None  # 延迟注入
+    
+    def set_daily_task_handler(self, handler):
+        """注入每日任务处理器"""
+        self.daily_task_handler = handler
 
     @player_required
     async def handle_bounty_list(self, player: Player, event: AstrMessageEvent):
@@ -115,7 +120,7 @@ class BountyHandler:
         remaining = max(0, self.MAX_DAILY_BOUNTIES - current_count)
 
         lines = [
-            "═══ 【悬赏榜】 ═══",
+            "━━ 悬赏榜 ━━",
             f"📅 今日剩余次数: {remaining}/{self.MAX_DAILY_BOUNTIES}",
             ""
         ]
@@ -142,7 +147,7 @@ class BountyHandler:
                     ""
                 ])
 
-        lines.append("═══════════════════")
+        lines.append("━━━━━━━━━━━━")
         yield event.plain_result("\n".join(lines))
 
     @player_required
@@ -190,7 +195,7 @@ class BountyHandler:
     async def _execute_bounty(self, player: Player, bounty: Dict, bounty_id: str, today: str) -> str:
         """执行悬赏任务"""
         lines = [
-            f"═══ 【{bounty['name']}】 ═══",
+            f"━━ {bounty['name']} ━━",
             "",
             bounty["description"],
             "",
@@ -253,13 +258,19 @@ class BountyHandler:
         await self.db.update_player(p_clone)
         await self.db.increment_bounty_count(player.user_id, today)
 
+        # 完成每日任务（只有成功才算完成）
+        if success and self.daily_task_handler:
+            task_completed = await self.daily_task_handler.complete_task(player.user_id, "bounty")
+            if task_completed:
+                lines.append("\n🎯 每日任务「悬赏猎人」已完成！")
+
         # 显示剩余次数
         remaining = self.MAX_DAILY_BOUNTIES - await self.db.get_daily_bounty_count(player.user_id, today)
         lines.extend([
             "",
             f"当前生命: {p_clone.hp}/{combat_stats['max_hp']}",
             f"今日剩余悬赏次数: {remaining}/{self.MAX_DAILY_BOUNTIES}",
-            "═══════════════════"
+            "━━━━━━━━━━━━"
         ])
 
         return "\n".join(lines)
@@ -308,13 +319,13 @@ class BountyHandler:
         remaining = max(0, self.MAX_DAILY_BOUNTIES - current_count)
 
         lines = [
-            "═══ 【悬赏状态】 ═══",
+            "━━ 悬赏状态 ━━",
             f"📅 日期: {today}",
             f"📋 今日已完成: {current_count} 次",
             f"✨ 剩余次数: {remaining} 次",
             "",
             "💡 使用「悬赏榜」查看可接取的任务",
-            "═══════════════════"
+            "━━━━━━━━━━━━"
         ]
 
         yield event.plain_result("\n".join(lines))

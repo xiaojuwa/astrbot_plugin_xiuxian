@@ -20,6 +20,11 @@ class SectHandler:
         self.config = config
         self.config_manager = config_manager
         self.sect_manager = SectManager(db, config)
+        self.daily_task_handler = None  # 延迟注入
+    
+    def set_daily_task_handler(self, handler):
+        """注入每日任务处理器"""
+        self.daily_task_handler = handler
 
     @player_required
     async def handle_create_sect(self, player: Player, event: AstrMessageEvent, sect_name: str):
@@ -115,11 +120,19 @@ class SectHandler:
         if success:
             # 重新获取玩家信息显示贡献度
             updated_player = await self.db.get_player_by_id(player.user_id)
-            yield event.plain_result(
+            msg = (
                 f"捐献成功！\n"
                 f"你向「{player.sect_name}」捐献了 {amount} 灵石\n"
                 f"你的宗门贡献度：{updated_player.sect_contribution}\n"
                 f"你的剩余灵石：{updated_player.gold}"
             )
+            
+            # 完成每日任务
+            if self.daily_task_handler:
+                completed = await self.daily_task_handler.complete_task(player.user_id, "sect_donate")
+                if completed:
+                    msg += "\n🎯 每日任务「宗门贡献」已完成！"
+            
+            yield event.plain_result(msg)
         else:
             yield event.plain_result("捐献失败，请稍后再试。")
