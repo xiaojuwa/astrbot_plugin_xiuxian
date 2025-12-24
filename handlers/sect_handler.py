@@ -84,10 +84,22 @@ class SectHandler:
         yield event.plain_result(reply_msg)
 
     @player_required
-    async def handle_sect_donate(self, player: Player, event: AstrMessageEvent, amount: int):
+    async def handle_sect_donate(self, player: Player, event: AstrMessageEvent):
         """向宗门捐献灵石"""
+        # 从消息中解析金额（格式：宗门捐献 金额）
+        message_text = event.message_str.strip()
+        parts = message_text.split()
+        
+        amount = 0
+        for part in parts:
+            try:
+                amount = int(part)
+                break
+            except ValueError:
+                continue
+        
         if amount <= 0:
-            yield event.plain_result("捐献金额必须大于0。")
+            yield event.plain_result("请输入正确的捐献金额，例如：`宗门捐献 100`")
             return
         
         if not player.sect_id:

@@ -109,8 +109,20 @@ class CombatHandler:
         yield event.plain_result("\n".join(report_lines))
 
     @player_required
-    async def handle_duel(self, attacker: Player, event: AstrMessageEvent, bet_amount: int = 100):
+    async def handle_duel(self, attacker: Player, event: AstrMessageEvent):
         """奇斗 - 带灵石赌注的PVP"""
+        # 从消息中解析赌注金额（格式：奇斗 @人 金额）
+        message_text = event.message_str.strip()
+        parts = message_text.split()
+        
+        bet_amount = 100  # 默认赌注
+        for part in parts:
+            try:
+                bet_amount = int(part)
+                break
+            except ValueError:
+                continue
+        
         if bet_amount < 10:
             yield event.plain_result("赌注最低10灵石！")
             return

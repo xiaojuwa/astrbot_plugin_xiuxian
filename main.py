@@ -74,7 +74,7 @@ CMD_MY_SKILLS = "我的功法"
     "astrbot_plugin_xiuxian",
     "xiaojuwa",
     "基于astrbot框架的文字修仙游戏",
-    "v2.3.1", # 版本号提升 - 功法/buff/奇斗/交易系统
+    "v2.3.2", # 版本号提升 - 功法/buff/奇斗/交易系统
     "https://github.com/xiaojuwa/astrbot_plugin_xiuxian"
 )
 class XiuXianPlugin(Star):
@@ -416,25 +416,25 @@ class XiuXianPlugin(Star):
 
     # --- v2.3.0 新增指令 ---
     @filter.command(CMD_DUEL, "带灵石赌注的切磋")
-    async def handle_duel(self, event: AstrMessageEvent, bet_amount: int = 100):
+    async def handle_duel(self, event: AstrMessageEvent):
         if not self._check_access(event):
             await self._send_access_denied_message(event)
             return
-        async for r in self.combat_handler.handle_duel(event, bet_amount): yield r
+        async for r in self.combat_handler.handle_duel(event): yield r
 
     @filter.command(CMD_TRANSFER, "转账灵石给其他玩家")
-    async def handle_transfer(self, event: AstrMessageEvent, amount: int):
+    async def handle_transfer(self, event: AstrMessageEvent):
         if not self._check_access(event):
             await self._send_access_denied_message(event)
             return
-        async for r in self.trade_handler.handle_transfer(event, amount): yield r
+        async for r in self.trade_handler.handle_transfer(event): yield r
 
     @filter.command(CMD_GIFT, "赠送物品给其他玩家")
-    async def handle_gift(self, event: AstrMessageEvent, item_name: str, quantity: int = 1):
+    async def handle_gift(self, event: AstrMessageEvent):
         if not self._check_access(event):
             await self._send_access_denied_message(event)
             return
-        async for r in self.trade_handler.handle_gift(event, item_name, quantity): yield r
+        async for r in self.trade_handler.handle_gift(event): yield r
 
     @filter.command(CMD_PVP_RANKING, "查看PVP排行榜")
     async def handle_pvp_ranking(self, event: AstrMessageEvent):
@@ -444,11 +444,11 @@ class XiuXianPlugin(Star):
         async for r in self.ranking_handler.handle_pvp_ranking(event): yield r
 
     @filter.command(CMD_SECT_DONATE, "向宗门捐献灵石")
-    async def handle_sect_donate(self, event: AstrMessageEvent, amount: int):
+    async def handle_sect_donate(self, event: AstrMessageEvent):
         if not self._check_access(event):
             await self._send_access_denied_message(event)
             return
-        async for r in self.sect_handler.handle_sect_donate(event, amount): yield r
+        async for r in self.sect_handler.handle_sect_donate(event): yield r
 
     @filter.command(CMD_MY_BUFF, "查看当前激活的buff")
     async def handle_my_buff(self, event: AstrMessageEvent):

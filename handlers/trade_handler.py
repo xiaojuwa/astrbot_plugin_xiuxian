@@ -31,10 +31,22 @@ class TradeHandler:
         return None
 
     @player_required
-    async def handle_transfer(self, player: Player, event: AstrMessageEvent, amount: int):
+    async def handle_transfer(self, player: Player, event: AstrMessageEvent):
         """转账灵石给其他玩家"""
+        # 从消息中解析金额（格式：转账 @人 数量）
+        message_text = event.message_str.strip()
+        parts = message_text.split()
+        
+        amount = 0
+        for part in parts:
+            try:
+                amount = int(part)
+                break
+            except ValueError:
+                continue
+        
         if amount <= 0:
-            yield event.plain_result("转账金额必须大于0。")
+            yield event.plain_result("请输入正确的转账金额，例如：`转账 @张三 100`")
             return
         
         target_user_id = self._get_mentioned_user(event)
@@ -82,8 +94,31 @@ class TradeHandler:
         )
 
     @player_required
-    async def handle_gift(self, player: Player, event: AstrMessageEvent, item_name: str, quantity: int = 1):
+    async def handle_gift(self, player: Player, event: AstrMessageEvent):
         """赠送物品给其他玩家"""
+        # 从消息中解析物品名和数量（格式：赠送 @人 物品名 [数量]）
+        message_text = event.message_str.strip()
+        parts = message_text.split()
+        
+        # 第一个是命令"赠送"，后面是物品名和可选数量
+        item_name = None
+        quantity = 1
+        
+        for i, part in enumerate(parts):
+            if part in ["赠送", "送"]:
+                continue
+            try:
+                # 尝试解析为数字（数量）
+                quantity = int(part)
+            except ValueError:
+                # 不是数字，作为物品名
+                if item_name is None:
+                    item_name = part
+        
+        if not item_name:
+            yield event.plain_result("请输入要赠送的物品名，例如：`赠送 @张三 引气丹 1`")
+            return
+        
         if quantity <= 0:
             yield event.plain_result("赠送数量必须大于0。")
             return
