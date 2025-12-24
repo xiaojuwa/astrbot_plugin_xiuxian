@@ -26,7 +26,11 @@ def player_required(func: Callable[..., Coroutine[any, any, AsyncGenerator[any, 
     @wraps(func)
     async def wrapper(self, event: AstrMessageEvent, *args, **kwargs):
         # self 是 Handler 类的实例 (e.g., PlayerHandler)
-        player = await self.db.get_player_by_id(event.get_sender_id())
+        try:
+            player = await self.db.get_player_by_id(event.get_sender_id())
+        except Exception as e:
+            yield event.plain_result(f"读取玩家数据时发生错误，请联系管理员。错误: {str(e)[:50]}")
+            return
         
         if not player:
             yield event.plain_result(f"道友尚未踏入仙途，请发送「{CMD_START_XIUXIAN}」开启你的旅程。")

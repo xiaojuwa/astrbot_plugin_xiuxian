@@ -184,23 +184,42 @@ class DataBase:
                 return None
             return self._safe_create_player(dict(row))
 
-    def _safe_create_player(self, row_dict: dict) -> Player:
-        """安全创建Player对象，确保所有v2.3.0新增字段都有默认值"""
-        # v2.3.0 新增字段的默认值
-        defaults = {
-            'learned_skills': '[]',
-            'active_buffs': '[]',
-            'pvp_wins': 0,
-            'pvp_losses': 0,
-            'last_pvp_time': 0.0,
-            'sect_contribution': 0,
-        }
-        # 确保所有必需字段存在
-        for field, default in defaults.items():
-            if field not in row_dict or row_dict[field] is None:
-                row_dict[field] = default
-        
-        return Player(**row_dict)
+    def _safe_create_player(self, row_dict: dict) -> Optional[Player]:
+        """安全创建Player对象，确保所有字段都有效并添加错误处理"""
+        try:
+            # 获取Player dataclass的所有有效字段名
+            valid_fields = {f.name for f in fields(Player)}
+            
+            # 只保留Player中定义的字段，过滤掉数据库中可能存在的额外列
+            filtered_dict = {k: v for k, v in row_dict.items() if k in valid_fields}
+            
+            # v2.3.0 新增字段的默认值
+            defaults = {
+                'learned_skills': '[]',
+                'active_buffs': '[]',
+                'pvp_wins': 0,
+                'pvp_losses': 0,
+                'last_pvp_time': 0.0,
+                'sect_contribution': 0,
+                # 其他可能缺失的旧字段
+                'equipped_weapon': None,
+                'equipped_armor': None,
+                'equipped_accessory': None,
+                'realm_id': None,
+                'realm_floor': 0,
+                'realm_data': None,
+            }
+            
+            # 确保所有必需字段存在且有有效值
+            for field, default in defaults.items():
+                if field not in filtered_dict or filtered_dict[field] is None:
+                    filtered_dict[field] = default
+            
+            return Player(**filtered_dict)
+        except Exception as e:
+            from astrbot.api import logger
+            logger.error(f"创建Player对象失败: {e}, row_dict keys: {list(row_dict.keys())}")
+            return None
 
     async def create_player(self, player: Player):
         player_fields = [f.name for f in fields(Player)]
