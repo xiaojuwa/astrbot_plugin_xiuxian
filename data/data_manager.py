@@ -84,7 +84,7 @@ class DataBase:
             "SELECT * FROM players ORDER BY level_index DESC, experience DESC LIMIT ?", (limit,)
         ) as cursor:
             rows = await cursor.fetchall()
-            return [Player(**dict(row)) for row in rows]
+            return [self._safe_create_player(dict(row)) for row in rows]
 
     # ========== 排行榜相关方法 ==========
 
@@ -94,7 +94,7 @@ class DataBase:
             "SELECT * FROM players ORDER BY level_index DESC, experience DESC LIMIT ?", (limit,)
         ) as cursor:
             rows = await cursor.fetchall()
-            return [Player(**dict(row)) for row in rows]
+            return [self._safe_create_player(dict(row)) for row in rows]
 
     async def get_top_players_by_gold(self, limit: int = 10) -> List[Player]:
         """获取财富排行榜（按灵石数量排序）"""
@@ -102,13 +102,13 @@ class DataBase:
             "SELECT * FROM players ORDER BY gold DESC LIMIT ?", (limit,)
         ) as cursor:
             rows = await cursor.fetchall()
-            return [Player(**dict(row)) for row in rows]
+            return [self._safe_create_player(dict(row)) for row in rows]
 
     async def get_top_players_by_combat(self, limit: int = 10, config_manager: ConfigManager = None) -> List[tuple]:
         """获取战力排行榜（按综合战力排序）"""
         async with self.conn.execute("SELECT * FROM players") as cursor:
             rows = await cursor.fetchall()
-            players = [Player(**dict(row)) for row in rows]
+            players = [self._safe_create_player(dict(row)) for row in rows]
 
         # 计算每个玩家的战力并排序
         player_combat_list = []
@@ -158,7 +158,7 @@ class DataBase:
         # 获取所有玩家并计算战力
         async with self.conn.execute("SELECT * FROM players") as cursor:
             rows = await cursor.fetchall()
-            players = [Player(**dict(row)) for row in rows]
+            players = [self._safe_create_player(dict(row)) for row in rows]
 
         rank = 1
         for p in players:
@@ -180,7 +180,27 @@ class DataBase:
     async def get_player_by_id(self, user_id: str) -> Optional[Player]:
         async with self.conn.execute("SELECT * FROM players WHERE user_id = ?", (user_id,)) as cursor:
             row = await cursor.fetchone()
-            return Player(**dict(row)) if row else None
+            if not row:
+                return None
+            return self._safe_create_player(dict(row))
+
+    def _safe_create_player(self, row_dict: dict) -> Player:
+        """安全创建Player对象，确保所有v2.3.0新增字段都有默认值"""
+        # v2.3.0 新增字段的默认值
+        defaults = {
+            'learned_skills': '[]',
+            'active_buffs': '[]',
+            'pvp_wins': 0,
+            'pvp_losses': 0,
+            'last_pvp_time': 0.0,
+            'sect_contribution': 0,
+        }
+        # 确保所有必需字段存在
+        for field, default in defaults.items():
+            if field not in row_dict or row_dict[field] is None:
+                row_dict[field] = default
+        
+        return Player(**row_dict)
 
     async def create_player(self, player: Player):
         player_fields = [f.name for f in fields(Player)]
@@ -235,7 +255,7 @@ class DataBase:
     async def get_sect_members(self, sect_id: int) -> List[Player]:
         async with self.conn.execute("SELECT * FROM players WHERE sect_id = ?", (sect_id,)) as cursor:
             rows = await cursor.fetchall()
-            return [Player(**dict(row)) for row in rows]
+            return [self._safe_create_player(dict(row)) for row in rows]
 
     async def update_player_sect(self, user_id: str, sect_id: Optional[int], sect_name: Optional[str]):
         await self.conn.execute("UPDATE players SET sect_id = ?, sect_name = ? WHERE user_id = ?", (sect_id, sect_name, user_id))
@@ -477,7 +497,7 @@ class DataBase:
             (limit,)
         ) as cursor:
             rows = await cursor.fetchall()
-            return [Player(**dict(row)) for row in rows]
+            return [self._safe_create_player(dict(row)) for row in rows]
 
     async def get_player_pvp_rank(self, user_id: str) -> int:
         """获取玩家的PVP排名"""
