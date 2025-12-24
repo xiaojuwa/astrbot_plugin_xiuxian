@@ -1,6 +1,7 @@
 # core/cultivation_manager.py
 import random
 import time
+from datetime import date
 from typing import Tuple, Dict
 
 from astrbot.api import AstrBotConfig, logger
@@ -47,14 +48,18 @@ class CultivationManager:
         )
 
     def handle_check_in(self, player: Player) -> Tuple[bool, str, Player]:
-        now = time.time()
-        if now - player.last_check_in < 22 * 60 * 60:
+        today = date.today()
+        # 将上次签到时间戳转换为日期，用于判断是否跨天
+        last_check_in_date = date.fromtimestamp(player.last_check_in) if player.last_check_in > 0 else None
+
+        # 检查是否已在今日签到（每日0点刷新）
+        if last_check_in_date == today:
             return False, "道友，今日已经签到过了，请明日再来。", player
 
         reward = random.randint(self.config["VALUES"]["CHECK_IN_REWARD_MIN"], self.config["VALUES"]["CHECK_IN_REWARD_MAX"])
         p_clone = player.clone()
         p_clone.gold += reward
-        p_clone.last_check_in = now
+        p_clone.last_check_in = time.time()
 
         msg = f"签到成功！获得灵石 x{reward}。道友当前的家底为 {p_clone.gold} 灵石。"
         return True, msg, p_clone
