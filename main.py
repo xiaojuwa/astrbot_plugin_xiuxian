@@ -74,7 +74,7 @@ CMD_MY_SKILLS = "我的功法"
     "astrbot_plugin_xiuxian",
     "xiaojuwa",
     "基于astrbot框架的文字修仙游戏",
-    "v2.3.0", # 版本号提升 - 功法/buff/奇斗/交易系统
+    "v2.3.1", # 版本号提升 - 功法/buff/奇斗/交易系统
     "https://github.com/xiaojuwa/astrbot_plugin_xiuxian"
 )
 class XiuXianPlugin(Star):
