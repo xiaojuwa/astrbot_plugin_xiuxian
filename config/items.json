@@ -37,7 +37,7 @@
         "type": "丹药",
         "rank": "珍品",
         "description": "辅助突破的关键丹药，使用后获得攻击加成buff。",
-        "price": 2000,
+        "price": 1200,
         "buff_effect": {
             "type": "attack_buff",
             "value": 30,
@@ -117,7 +117,7 @@
         "type": "丹药",
         "rank": "珍品",
         "description": "以虎魄炼制，大幅提升攻击力。",
-        "price": 1500,
+        "price": 800,
         "buff_effect": {
             "type": "attack_buff",
             "value": 25,

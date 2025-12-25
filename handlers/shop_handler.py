@@ -225,15 +225,54 @@ class ShopHandler:
             return
 
         item_id_to_add, target_item_info = item_to_buy
+        
+        # v2.6.5: 检查道具限购
+        ITEM_DAILY_LIMIT = {
+            "1008": 1,  # 九转还魂丹 每日限购1个
+            "1010": 2,  # 金髓丹 每日限购2个
+            "1016": 3,  # 洗髓丹 每日限购3个
+        }
+        
+        if item_id_to_add in ITEM_DAILY_LIMIT:
+            from datetime import date
+            today = date.today().isoformat()
+            current_count = await self.db.get_daily_item_purchase_count(player.user_id, item_id_to_add, today)
+            daily_limit = ITEM_DAILY_LIMIT[item_id_to_add]
+            
+            # 检查本次购买后是否超限
+            if current_count + quantity > daily_limit:
+                remaining = daily_limit - current_count
+                yield event.plain_result(
+                    f"今日「{item_name}」购买次数受限！\n"
+                    f"已购买：{current_count}/{daily_limit}\n"
+                    f"剩余可购：{remaining}个\n"
+                    f"你想购买{quantity}个，超过剩余额度。"
+                )
+                return
+        
         total_cost = target_item_info.price * quantity
 
         success, reason = await self.db.transactional_buy_item(player.user_id, item_id_to_add, quantity, total_cost)
 
         if success:
+            # 购买成功后记录限购道具的购买次数
+            if item_id_to_add in ITEM_DAILY_LIMIT:
+                from datetime import date
+                today = date.today().isoformat()
+                await self.db.increment_item_purchase_count(player.user_id, item_id_to_add, today, quantity)
+            
             updated_player = await self.db.get_player_by_id(player.user_id)
             msg = f"购买成功！花费{total_cost}灵石，购得「{item_name}」x{quantity}。"
             if updated_player:
                 msg += f"剩余灵石 {updated_player.gold}。"
+            
+            # 如果是限购道具，显示剩余额度
+            if item_id_to_add in ITEM_DAILY_LIMIT:
+                from datetime import date
+                today = date.today().isoformat()
+                new_count = await self.db.get_daily_item_purchase_count(player.user_id, item_id_to_add, today)
+                remaining = ITEM_DAILY_LIMIT[item_id_to_add] - new_count
+                msg += f"\n📊 今日剩余额度：{remaining}/{ITEM_DAILY_LIMIT[item_id_to_add]}"
             
             # 完成每日任务
             if self.daily_task_handler:

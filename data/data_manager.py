@@ -950,3 +950,23 @@ class DataBase:
             ON CONFLICT(user_id, realm_date) DO UPDATE SET count = count + 1
         """, (user_id, realm_date))
         await self.conn.commit()
+
+    # ========== 道具限购系统相关方法 (v2.6.5) ==========
+
+    async def get_daily_item_purchase_count(self, user_id: str, item_id: str, purchase_date: str) -> int:
+        """获取玩家当日某道具的购买次数"""
+        async with self.conn.execute(
+            "SELECT count FROM daily_item_purchase WHERE user_id = ? AND item_id = ? AND purchase_date = ?",
+            (user_id, item_id, purchase_date)
+        ) as cursor:
+            row = await cursor.fetchone()
+            return row["count"] if row else 0
+
+    async def increment_item_purchase_count(self, user_id: str, item_id: str, purchase_date: str, quantity: int = 1):
+        """增加玩家当日某道具的购买次数"""
+        await self.conn.execute("""
+            INSERT INTO daily_item_purchase (user_id, item_id, purchase_date, count)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(user_id, item_id, purchase_date) DO UPDATE SET count = count + ?
+        """, (user_id, item_id, purchase_date, quantity, quantity))
+        await self.conn.commit()

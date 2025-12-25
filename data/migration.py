@@ -5,7 +5,7 @@ from typing import Dict, Callable, Awaitable
 from astrbot.api import logger
 from ..config_manager import ConfigManager
 
-LATEST_DB_VERSION = 20 # v2.6.4 添加每日限制系统
+LATEST_DB_VERSION = 21 # v2.6.5 添加道具限购系统
 
 MIGRATION_TASKS: Dict[int, Callable[[aiosqlite.Connection, ConfigManager], Awaitable[None]]] = {}
 
@@ -1024,3 +1024,24 @@ async def _upgrade_v19_to_v20(conn: aiosqlite.Connection, config_manager: Config
     logger.info("✅ 已创建 daily_realm_count 表")
 
     logger.info("v19 -> v20 数据库迁移完成！每日限制系统已添加。")
+
+@migration(21)
+async def _upgrade_v20_to_v21(conn: aiosqlite.Connection, config_manager: ConfigManager):
+    """v2.6.5: 添加道具限购系统 - 特定道具每日购买次数限制"""
+    logger.info("开始执行 v20 -> v21 数据库迁移（道具限购系统）...")
+
+    # 创建每日道具购买记录表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS daily_item_purchase (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            item_id TEXT NOT NULL,
+            purchase_date TEXT NOT NULL,
+            count INTEGER NOT NULL DEFAULT 0,
+            UNIQUE(user_id, item_id, purchase_date),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+    logger.info("✅ 已创建 daily_item_purchase 表")
+
+    logger.info("v20 -> v21 数据库迁移完成！道具限购系统已添加。")

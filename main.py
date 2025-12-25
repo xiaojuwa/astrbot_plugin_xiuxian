@@ -104,7 +104,7 @@ CMD_REDEEM = "橘的恩赐"
     "astrbot_plugin_xiuxian",
     "xiaojuwa",
     "基于astrbot框架的文字修仙游戏",
-    "v2.6.4", # 版本号 - 紧急平衡性修复
+    "v2.6.5", # 版本号 - 道具平衡与限购系统
     "https://github.com/xiaojuwa/astrbot_plugin_xiuxian"
 )
 class XiuXianPlugin(Star):
