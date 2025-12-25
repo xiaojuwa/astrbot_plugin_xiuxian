@@ -371,7 +371,16 @@ class DataBase:
             logger.error(f"购买物品事务失败: {e}")
             return False, "ERROR_DATABASE"
 
-    async def transactional_apply_item_effect(self, user_id: str, item_id: str, quantity: int, effect: PlayerEffect) -> bool:
+    async def transactional_apply_item_effect(self, user_id: str, item_id: str, quantity: int, effect: PlayerEffect, actual_max_hp: int = 0) -> bool:
+        """应用物品效果的事务操作
+
+        Args:
+            user_id: 玩家ID
+            item_id: 物品ID
+            quantity: 使用数量
+            effect: 物品效果
+            actual_max_hp: 实际最大血量（包含装备/功法加成），如果为0则使用数据库中的max_hp
+        """
         try:
             await self.conn.execute("BEGIN")
             cursor = await self.conn.execute(
@@ -384,16 +393,29 @@ class DataBase:
 
             await self.conn.execute("DELETE FROM inventory WHERE user_id = ? AND item_id = ? AND quantity <= 0", (user_id, item_id))
 
-            await self.conn.execute(
-                """
-                UPDATE players
-                SET experience = experience + ?,
-                    gold = gold + ?,
-                    hp = MIN(max_hp, hp + ?)
-                WHERE user_id = ?
-                """,
-                (effect.experience, effect.gold, effect.hp, user_id)
-            )
+            # 如果提供了实际最大血量，使用它来限制恢复；否则使用数据库中的max_hp
+            if actual_max_hp > 0:
+                await self.conn.execute(
+                    """
+                    UPDATE players
+                    SET experience = experience + ?,
+                        gold = gold + ?,
+                        hp = MIN(?, hp + ?)
+                    WHERE user_id = ?
+                    """,
+                    (effect.experience, effect.gold, actual_max_hp, effect.hp, user_id)
+                )
+            else:
+                await self.conn.execute(
+                    """
+                    UPDATE players
+                    SET experience = experience + ?,
+                        gold = gold + ?,
+                        hp = MIN(max_hp, hp + ?)
+                    WHERE user_id = ?
+                    """,
+                    (effect.experience, effect.gold, effect.hp, user_id)
+                )
             await self.conn.commit()
             return True
         except aiosqlite.Error as e:

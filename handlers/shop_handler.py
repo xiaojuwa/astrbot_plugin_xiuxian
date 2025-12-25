@@ -378,7 +378,11 @@ class ShopHandler:
                 yield event.plain_result(msg)
                 return
 
-            success = await self.db.transactional_apply_item_effect(player.user_id, target_item_id, quantity, effect)
+            # 获取玩家实际最大血量（包含装备/功法加成）
+            combat_stats = player.get_combat_stats(self.config_manager)
+            actual_max_hp = combat_stats.get("max_hp", player.max_hp)
+
+            success = await self.db.transactional_apply_item_effect(player.user_id, target_item_id, quantity, effect, actual_max_hp)
 
             if success:
                 # 完成每日任务

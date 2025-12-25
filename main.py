@@ -103,7 +103,7 @@ CMD_REDEEM = "橘的恩赐"
     "astrbot_plugin_xiuxian",
     "xiaojuwa",
     "基于astrbot框架的文字修仙游戏",
-    "v2.5.1", # 版本号提升 - GM管理员工具
+    "v2.5.2", # 版本号提升 - GM管理员工具修复
     "https://github.com/xiaojuwa/astrbot_plugin_xiuxian"
 )
 class XiuXianPlugin(Star):
@@ -613,19 +613,19 @@ class XiuXianPlugin(Star):
 
     @filter.permission_type(filter.PermissionType.ADMIN)
     @filter.command(CMD_GM_RESET_PLAYER, "GM重置玩家")
-    async def handle_gm_reset_player(self, event: AstrMessageEvent):
+    async def handle_gm_reset_player(self, event: AstrMessageEvent, qq_param: str = ""):
         if not self._check_access(event):
             await self._send_access_denied_message(event)
             return
-        async for r in self.gm_handler.handle_gm_reset_player(event): yield r
+        async for r in self.gm_handler.handle_gm_reset_player(event, qq_param): yield r
 
     @filter.permission_type(filter.PermissionType.ADMIN)
     @filter.command(CMD_GM_VIEW_PLAYER, "GM查看玩家详情")
-    async def handle_gm_view_player(self, event: AstrMessageEvent):
+    async def handle_gm_view_player(self, event: AstrMessageEvent, qq_param: str = ""):
         if not self._check_access(event):
             await self._send_access_denied_message(event)
             return
-        async for r in self.gm_handler.handle_gm_view_player(event): yield r
+        async for r in self.gm_handler.handle_gm_view_player(event, qq_param): yield r
 
     @filter.permission_type(filter.PermissionType.ADMIN)
     @filter.command(CMD_GM_LIST_LEVELS, "GM查看境界列表")
@@ -645,11 +645,11 @@ class XiuXianPlugin(Star):
 
     @filter.permission_type(filter.PermissionType.ADMIN)
     @filter.command(CMD_GM_CLEAR_STATE, "GM清除玩家状态")
-    async def handle_gm_clear_state(self, event: AstrMessageEvent):
+    async def handle_gm_clear_state(self, event: AstrMessageEvent, qq_param: str = ""):
         if not self._check_access(event):
             await self._send_access_denied_message(event)
             return
-        async for r in self.gm_handler.handle_gm_clear_state(event): yield r
+        async for r in self.gm_handler.handle_gm_clear_state(event, qq_param): yield r
 
     @filter.permission_type(filter.PermissionType.ADMIN)
     @filter.command(CMD_GM_ADD_CODE, "GM添加激活码")

@@ -36,18 +36,62 @@ class GMHandler:
                 return str(comp.qq)
         return ""
 
-    async def handle_gm_add_gold(self, event: AstrMessageEvent, amount: str):
-        """GM添加灵石"""
+    def _parse_target_user(self, event: AstrMessageEvent, qq_param: str = "") -> str:
+        """从消息中解析目标用户ID，支持@和直接输入QQ号两种方式
+
+        Args:
+            event: 消息事件
+            qq_param: 可能包含QQ号的参数字符串
+
+        Returns:
+            目标用户ID，如果无法解析则返回空字符串
+        """
+        # 优先从@消息中获取
         target_id = self._parse_at_user(event)
+        if target_id:
+            return target_id
+
+        # 尝试从参数中解析QQ号（纯数字）
+        if qq_param:
+            # 清理参数，去除可能的空格和@符号
+            cleaned = qq_param.strip().lstrip('@')
+            if cleaned.isdigit() and len(cleaned) >= 5:  # QQ号至少5位
+                return cleaned
+
+        return ""
+
+    async def handle_gm_add_gold(self, event: AstrMessageEvent, amount: str):
+        """GM添加灵石
+        支持两种格式：
+        1. GM加灵石 @玩家 1000
+        2. GM加灵石 QQ号 1000
+        """
+        # 解析参数：可能是 "@玩家 1000" 或 "QQ号 1000"
+        parts = amount.split() if amount else []
+
+        # 尝试从参数中提取QQ号和数额
+        qq_param = ""
+        amount_str = ""
+
+        if len(parts) >= 2:
+            # 格式：QQ号 数额
+            qq_param = parts[0]
+            amount_str = parts[1]
+        elif len(parts) == 1:
+            # 可能只有数额（@用户在消息组件中）
+            amount_str = parts[0]
+
+        # 解析目标用户
+        target_id = self._parse_target_user(event, qq_param)
         if not target_id:
-            yield event.plain_result("请@一个玩家，例如：GM加灵石 @玩家 1000")
+            yield event.plain_result("请@一个玩家或输入QQ号，例如：\nGM加灵石 @玩家 1000\nGM加灵石 123456789 1000")
             return
-        
+
         # 解析数值
         try:
-            amount_int = int(amount)
+            amount_int = int(amount_str)
         except (ValueError, TypeError):
-            yield event.plain_result("请输入有效的数额，例如：GM加灵石 @玩家 1000")
+            yield event.plain_result("请输入有效的数额，例如：\nGM加灵石 @玩家 1000\nGM加灵石 123456789 1000")
             return
         
         player = await self.db.get_player_by_id(target_id)
@@ -65,16 +109,31 @@ class GMHandler:
         yield event.plain_result(f"✅ 已为玩家{action} {abs(amount_int)} 灵石\n当前灵石：{player.gold}")
 
     async def handle_gm_add_exp(self, event: AstrMessageEvent, amount: str):
-        """GM添加修为"""
-        target_id = self._parse_at_user(event)
+        """GM添加修为
+        支持两种格式：
+        1. GM加修为 @玩家 10000
+        2. GM加修为 QQ号 10000
+        """
+        # 解析参数
+        parts = amount.split() if amount else []
+        qq_param = ""
+        amount_str = ""
+
+        if len(parts) >= 2:
+            qq_param = parts[0]
+            amount_str = parts[1]
+        elif len(parts) == 1:
+            amount_str = parts[0]
+
+        target_id = self._parse_target_user(event, qq_param)
         if not target_id:
-            yield event.plain_result("请@一个玩家，例如：GM加修为 @玩家 10000")
+            yield event.plain_result("请@一个玩家或输入QQ号，例如：\nGM加修为 @玩家 10000\nGM加修为 123456789 10000")
             return
-        
+
         try:
-            amount_int = int(amount)
+            amount_int = int(amount_str)
         except (ValueError, TypeError):
-            yield event.plain_result("请输入有效的数额，例如：GM加修为 @玩家 10000")
+            yield event.plain_result("请输入有效的数额，例如：\nGM加修为 @玩家 10000\nGM加修为 123456789 10000")
             return
         
         player = await self.db.get_player_by_id(target_id)
@@ -92,16 +151,31 @@ class GMHandler:
         yield event.plain_result(f"✅ 已为玩家{action} {abs(amount_int)} 修为\n当前修为：{player.experience}")
 
     async def handle_gm_set_level(self, event: AstrMessageEvent, level_index: str):
-        """GM设置境界"""
-        target_id = self._parse_at_user(event)
+        """GM设置境界
+        支持两种格式：
+        1. GM设境界 @玩家 10
+        2. GM设境界 QQ号 10
+        """
+        # 解析参数
+        parts = level_index.split() if level_index else []
+        qq_param = ""
+        level_str = ""
+
+        if len(parts) >= 2:
+            qq_param = parts[0]
+            level_str = parts[1]
+        elif len(parts) == 1:
+            level_str = parts[0]
+
+        target_id = self._parse_target_user(event, qq_param)
         if not target_id:
-            yield event.plain_result("请@一个玩家，例如：GM设境界 @玩家 10")
+            yield event.plain_result("请@一个玩家或输入QQ号，例如：\nGM设境界 @玩家 10\nGM设境界 123456789 10")
             return
-        
+
         try:
-            level_index_int = int(level_index)
+            level_index_int = int(level_str)
         except (ValueError, TypeError):
-            yield event.plain_result("请输入有效的境界索引，例如：GM设境界 @玩家 10")
+            yield event.plain_result("请输入有效的境界索引，例如：\nGM设境界 @玩家 10\nGM设境界 123456789 10")
             return
         
         player = await self.db.get_player_by_id(target_id)
@@ -130,55 +204,100 @@ class GMHandler:
         yield event.plain_result(f"✅ 已将玩家境界修改为：{new_level}\n基础属性已同步更新")
 
     async def handle_gm_add_item(self, event: AstrMessageEvent, item_name: str, quantity: str = "1"):
-        """GM添加物品"""
-        target_id = self._parse_at_user(event)
+        """GM添加物品
+        支持两种格式：
+        1. GM加物品 @玩家 聚气丹 10
+        2. GM加物品 QQ号 聚气丹 10
+        """
+        # 解析参数：item_name 可能包含 "QQ号 物品名" 或 "@用户 物品名"
+        parts = item_name.split() if item_name else []
+        qq_param = ""
+        actual_item_name = ""
+        quantity_str = quantity
+
+        if len(parts) >= 2:
+            # 检查第一个参数是否是QQ号
+            if parts[0].isdigit() and len(parts[0]) >= 5:
+                qq_param = parts[0]
+                actual_item_name = parts[1]
+                # 如果有第三个参数，那是数量
+                if len(parts) >= 3:
+                    quantity_str = parts[2]
+            else:
+                # 第一个参数是物品名
+                actual_item_name = parts[0]
+                if len(parts) >= 2 and parts[1].isdigit():
+                    quantity_str = parts[1]
+        elif len(parts) == 1:
+            actual_item_name = parts[0]
+
+        target_id = self._parse_target_user(event, qq_param)
         if not target_id:
-            yield event.plain_result("请@一个玩家，例如：GM加物品 @玩家 聚气丹 10")
+            yield event.plain_result("请@一个玩家或输入QQ号，例如：\nGM加物品 @玩家 聚气丹 10\nGM加物品 123456789 聚气丹 10")
             return
-        
+
         try:
-            quantity_int = int(quantity)
+            quantity_int = int(quantity_str)
         except (ValueError, TypeError):
-            yield event.plain_result("请输入有效的数量，例如：GM加物品 @玩家 聚气丹 10")
+            yield event.plain_result("请输入有效的数量，例如：\nGM加物品 @玩家 聚气丹 10\nGM加物品 123456789 聚气丹 10")
+            return
+
+        if not actual_item_name:
+            yield event.plain_result("请输入物品名称，例如：\nGM加物品 @玩家 聚气丹 10\nGM加物品 123456789 聚气丹 10")
             return
         
         player = await self.db.get_player_by_id(target_id)
         if not player:
             yield event.plain_result("目标玩家尚未踏入仙途。")
             return
-        
+
         item_id = None
         item_data = None
         for iid, idata in self.config_manager.item_data.items():
-            if idata.name == item_name:
+            if idata.name == actual_item_name:
                 item_id = iid
                 item_data = idata
                 break
-        
+
         if not item_id:
-            yield event.plain_result(f"未找到物品「{item_name}」")
+            yield event.plain_result(f"未找到物品「{actual_item_name}」")
             return
-        
+
         if quantity_int <= 0:
             yield event.plain_result("数量必须大于0")
             return
-        
+
         await self.db.add_items_to_inventory_in_transaction(target_id, {item_id: quantity_int})
-        
-        logger.info(f"[GM] 管理员 {event.get_sender_id()} 为玩家 {target_id} 添加了 {quantity_int}x {item_name}")
-        yield event.plain_result(f"✅ 已为玩家添加 {quantity_int}x「{item_name}」({item_data.rank})")
+
+        logger.info(f"[GM] 管理员 {event.get_sender_id()} 为玩家 {target_id} 添加了 {quantity_int}x {actual_item_name}")
+        yield event.plain_result(f"✅ 已为玩家添加 {quantity_int}x「{actual_item_name}」({item_data.rank})")
 
     async def handle_gm_set_hp(self, event: AstrMessageEvent, hp: str):
-        """GM设置生命值"""
-        target_id = self._parse_at_user(event)
+        """GM设置生命值
+        支持两种格式：
+        1. GM设生命 @玩家 1000
+        2. GM设生命 QQ号 1000
+        """
+        # 解析参数
+        parts = hp.split() if hp else []
+        qq_param = ""
+        hp_str = ""
+
+        if len(parts) >= 2:
+            qq_param = parts[0]
+            hp_str = parts[1]
+        elif len(parts) == 1:
+            hp_str = parts[0]
+
+        target_id = self._parse_target_user(event, qq_param)
         if not target_id:
-            yield event.plain_result("请@一个玩家，例如：GM设生命 @玩家 1000")
+            yield event.plain_result("请@一个玩家或输入QQ号，例如：\nGM设生命 @玩家 1000\nGM设生命 123456789 1000")
             return
-        
+
         try:
-            hp_int = int(hp)
+            hp_int = int(hp_str)
         except (ValueError, TypeError):
-            yield event.plain_result("请输入有效的生命值，例如：GM设生命 @玩家 1000")
+            yield event.plain_result("请输入有效的生命值，例如：\nGM设生命 @玩家 1000\nGM设生命 123456789 1000")
             return
         
         player = await self.db.get_player_by_id(target_id)
@@ -196,11 +315,15 @@ class GMHandler:
         logger.info(f"[GM] 管理员 {event.get_sender_id()} 将玩家 {target_id} 生命值设为 {player.hp}")
         yield event.plain_result(f"✅ 已将玩家生命值设为：{player.hp}/{player.max_hp}")
 
-    async def handle_gm_reset_player(self, event: AstrMessageEvent):
-        """GM重置玩家"""
-        target_id = self._parse_at_user(event)
+    async def handle_gm_reset_player(self, event: AstrMessageEvent, qq_param: str = ""):
+        """GM重置玩家
+        支持两种格式：
+        1. GM重置玩家 @玩家
+        2. GM重置玩家 QQ号
+        """
+        target_id = self._parse_target_user(event, qq_param)
         if not target_id:
-            yield event.plain_result("请@一个玩家，例如：GM重置玩家 @玩家")
+            yield event.plain_result("请@一个玩家或输入QQ号，例如：\nGM重置玩家 @玩家\nGM重置玩家 123456789")
             return
         
         player = await self.db.get_player_by_id(target_id)
@@ -240,11 +363,15 @@ class GMHandler:
         logger.info(f"[GM] 管理员 {event.get_sender_id()} 重置了玩家 {target_id}")
         yield event.plain_result(f"✅ 已重置玩家数据\n境界：{player.get_level(self.config_manager)}\n灵石：{player.gold}")
 
-    async def handle_gm_view_player(self, event: AstrMessageEvent):
-        """GM查看玩家详细信息"""
-        target_id = self._parse_at_user(event)
+    async def handle_gm_view_player(self, event: AstrMessageEvent, qq_param: str = ""):
+        """GM查看玩家详细信息
+        支持两种格式：
+        1. GM查看玩家 @玩家
+        2. GM查看玩家 QQ号
+        """
+        target_id = self._parse_target_user(event, qq_param)
         if not target_id:
-            yield event.plain_result("请@一个玩家，例如：GM查看玩家 @玩家")
+            yield event.plain_result("请@一个玩家或输入QQ号，例如：\nGM查看玩家 @玩家\nGM查看玩家 123456789")
             return
         
         player = await self.db.get_player_by_id(target_id)
@@ -305,11 +432,15 @@ class GMHandler:
         lines.append("================")
         yield event.plain_result("\n".join(lines))
 
-    async def handle_gm_clear_state(self, event: AstrMessageEvent):
-        """GM清除玩家状态（解除闭关/秘境等）"""
-        target_id = self._parse_at_user(event)
+    async def handle_gm_clear_state(self, event: AstrMessageEvent, qq_param: str = ""):
+        """GM清除玩家状态（解除闭关/秘境等）
+        支持两种格式：
+        1. GM清状态 @玩家
+        2. GM清状态 QQ号
+        """
+        target_id = self._parse_target_user(event, qq_param)
         if not target_id:
-            yield event.plain_result("请@一个玩家，例如：GM清状态 @玩家")
+            yield event.plain_result("请@一个玩家或输入QQ号，例如：\nGM清状态 @玩家\nGM清状态 123456789")
             return
         
         player = await self.db.get_player_by_id(target_id)
