@@ -60,7 +60,7 @@ class RealmGenerator:
         boss_pool = list(config_manager.boss_data.keys())
 
         if not monster_pool or not boss_pool:
-            logger.error("秘境生成失败：怪物池或Boss池为空，请检查 monsters.json 和 bosses.json。")
+            logger.error("秘境生成失败：怪物池或Boss池为空，请检check monsters.json 和 bosses.json。")
             return None
 
         floor_events: List[FloorEvent] = []
@@ -236,12 +236,12 @@ class RealmManager:
         if victory and p.realm_id is not None and p.realm_floor >= realm_instance.total_floors:
             type_name = RealmGenerator.REALM_TYPES.get(realm_instance.realm_type, {}).get("name", "未知秘境")
             difficulty_name = RealmGenerator.DIFFICULTIES.get(realm_instance.difficulty, {}).get("name", "普通")
-            realm_name = f"{type_name}·{difficulty_name}试炼"
+            realm_name = f"{type_name}{difficulty_name}试炼"
             
             # 完成奖励
             completion_bonus = int(200 * (1 + p.level_index) * reward_mult)
             p.gold += completion_bonus
-            event_log.append(f"\n🎊 恭喜！你成功探索完了【{realm_name}】的所有区域！")
+            event_log.append(f"\n 恭喜！你成功探索完了【{realm_name}】的所有区域！")
             event_log.append(f"获得完成奖励：{completion_bonus} 灵石")
             
             p.realm_id = None
@@ -277,7 +277,7 @@ class RealmManager:
             gained_items = rewards.get('items', {})
 
             if event.type == "boss":
-                 combat_log.append(f"\n⚔️ 成功击败最终头目！")
+                 combat_log.append(f"\n 成功击败最终头目！")
 
         return victory, combat_log, p, gained_items
 
@@ -307,7 +307,7 @@ class RealmManager:
             p.gold += int(rewards.get('gold', 0) * elite_mult * reward_mult)
             p.experience += int(rewards.get('experience', 0) * elite_mult * reward_mult)
             gained_items = rewards.get('items', {})
-            combat_log.append(f"\n💎 击败精英怪物，获得额外奖励！")
+            combat_log.append(f"\n 击败精英怪物，获得额外奖励！")
 
         return victory, combat_log, p, gained_items
 
@@ -318,7 +318,7 @@ class RealmManager:
         # 应用奖励倍率
         gold_gained = int(gold_gained * reward_mult)
         p.gold += gold_gained
-        log.append(f"💰 获得了 {gold_gained} 灵石！")
+        log.append(f" 获得了 {gold_gained} 灵石！")
         return log, p, {}
 
     def _handle_trap_event(self, p: Player, event: FloorEvent) -> Tuple[List[str], Player]:
@@ -338,7 +338,7 @@ class RealmManager:
             actual_loss = min(p.gold, gold_loss)
             p.gold -= actual_loss
             if actual_loss > 0:
-                log.append(f"💸 损失了 {actual_loss} 灵石！")
+                log.append(f" 损失了 {actual_loss} 灵石！")
         
         return log, p
 
@@ -355,7 +355,7 @@ class RealmManager:
             heal_percent = effect.get("percent", 0.3)
             heal_amount = int(p.max_hp * heal_percent)
             p.hp = min(p.max_hp, p.hp + heal_amount)
-            log.append(f"❤️ 生命值恢复了 {heal_amount} 点！（当前：{p.hp}/{p.max_hp}）")
+            log.append(f" 生命值恢复了 {heal_amount} 点！（当前：{p.hp}/{p.max_hp}）")
         elif "buff" in effect_type or "debuff" in effect_type:
             value = effect.get("value", 0)
             duration = effect.get("duration", 3)
@@ -363,16 +363,16 @@ class RealmManager:
                 buff_type = "attack_buff" if value > 0 else "attack_debuff"
                 p.add_buff(buff_type, abs(value), duration)
                 if value > 0:
-                    log.append(f"⚔️ 获得【{name}】：攻击力+{value}，持续{duration}场战斗")
+                    log.append(f" 获得【{name}】：攻击力+{value}，持续{duration}场战斗")
                 else:
-                    log.append(f"😈 受到【{name}】：攻击力{value}，持续{duration}场战斗")
+                    log.append(f" 受到【{name}】：攻击力{value}，持续{duration}场战斗")
             elif "defense" in effect_type:
                 buff_type = "defense_buff" if value > 0 else "defense_debuff"
                 p.add_buff(buff_type, abs(value), duration)
                 if value > 0:
-                    log.append(f"🛡️ 获得【{name}】：防御力+{value}，持续{duration}场战斗")
+                    log.append(f" 获得【{name}】：防御力+{value}，持续{duration}场战斗")
                 else:
-                    log.append(f"😈 受到【{name}】：防御力{value}，持续{duration}场战斗")
+                    log.append(f" 受到【{name}】：防御力{value}，持续{duration}场战斗")
         
         return log, p
 
@@ -427,104 +427,101 @@ class RealmManager:
             heal_percent = result.get("heal_percent", 0.5)
             heal_amount = int(p.max_hp * heal_percent)
             p.hp = min(p.max_hp, p.hp + heal_amount)
-            log.append(f"✨ 沐浴在灵泉中，生命值恢复了 {heal_amount} 点！")
+            log.append(f" 沐浴在灵泉中，生命值恢复了 {heal_amount} 点！")
             
             buff_data = result.get("buff", {})
             if buff_data:
                 p.add_buff(buff_data.get("type", "attack_buff"), buff_data.get("value", 5), buff_data.get("duration", 3))
-                log.append(f"⚔️ 并且获得了力量提升！")
+                log.append(f" 并且获得了力量提升！")
         
         elif result_type == "gold_bonus":
             gold = int(result.get("gold", 300) * reward_mult)
             p.gold += gold
-            log.append(f"💎 获得了 {gold} 灵石！")
+            log.append(f" 获得了 {gold} 灵石！")
         
         elif result_type == "damage":
             damage_percent = result.get("damage_percent", 0.15)
             damage = int(p.max_hp * damage_percent)
             p.hp = max(1, p.hp - damage)
-            log.append(f"⚡ 受到了 {damage} 点伤害！（当前：{p.hp}/{p.max_hp}）")
+            log.append(f" 受到了 {damage} 点伤害！（当前：{p.hp}/{p.max_hp}）")
         
         elif result_type == "debuff":
             effect = result.get("effect", {})
             p.add_buff(effect.get("type", "defense_debuff"), effect.get("value", 3), effect.get("duration", 2))
-            log.append(f"🕸️ 你被困住了，属性暂时降低！")
+            log.append(f" 你被困住了，属性暂时降低！")
         
-        return log, p         
-         a s y n c   d e f   h a n d l e _ p l a y e r _ c h o i c e ( s e l f ,   p l a y e r :   P l a y e r ,   c h o i c e _ n u m :   i n t )   - >   T u p l e [ b o o l ,   s t r ,   P l a y e r ,   D i c t [ s t r ,   i n t ] ] :  
-                 " " "  
-                 �o�R�`�A%��f�'1]�o�QQ�(��R� Y�Z 
-                  
-                 A r g s :  
-                         p l a y e r :   �A%��5pEx�� 
-                         c h o i c e _ n u m :   �A%�᫕Y�Z(��R*}Y�?  
-                          
-                 R e t u r n s :  
-                         ( s u c c e s s ,   m e s s a g e ,   u p d a t e d _ p l a y e r ,   g a i n e d _ i t e m s )  
-                 " " "  
-                 p   =   p l a y e r . c l o n e ( )  
-                  
-                 i f   n o t   p . r e a l m _ p e n d i n g _ c h o i c e :  
-                         r e t u r n   F a l s e ,   " 0��d�XZ!AnǕ� Ut�O� Y�Z(��R(|`m��� ? ,   p ,   { }  
-                  
-                 t r y :  
-                         c h o i c e _ d a t a   =   j s o n . l o a d s ( p . r e a l m _ p e n d i n g _ c h o i c e )  
-                 e x c e p t   ( j s o n . J S O N D e c o d e E r r o r ,   T y p e E r r o r ) :  
-                         p . r e a l m _ p e n d i n g _ c h o i c e   =   N o n e  
-                         r e t u r n   F a l s e ,   " ��Y�Z��HrA]�[�P6r�}\�QZtT�j��? ,   p ,   { }  
-                  
-                 c h o i c e _ t y p e   =   c h o i c e _ d a t a . g e t ( " t y p e " ,   " c h o i c e " )  
-                  
-                 i f   c h o i c e _ t y p e   = =   " m e r c h a n t " :  
-                         #   _��UIl\m)["k 
-                         o f f e r i n g s   =   c h o i c e _ d a t a . g e t ( " o f f e r i n g s " ,   [ ] )  
-                         i f   c h o i c e _ n u m   = =   l e n ( o f f e r i n g s )   +   1 :  
-                                 #   ��Y�Z�m�]�U�m?  
-                                 p . r e a l m _ p e n d i n g _ c h o i c e   =   N o n e  
-                                 r e t u r n   T r u e ,   " cm�r�U9p+l	{�t]��b`m���}�m�n�0��\7b^�Xig�m� ? ,   p ,   { }  
-                         e l i f   1   < =   c h o i c e _ n u m   < =   l e n ( o f f e r i n g s ) :  
-                                 o f f e r i n g   =   o f f e r i n g s [ c h o i c e _ n u m   -   1 ]  
-                                 s u c c e s s ,   m s g ,   p   =   E v e n t P r o c e s s o r . p r o c e s s _ m e r c h a n t _ p u r c h a s e ( o f f e r i n g ,   p )  
-                                  
-                                 #   �o�PIp�t]��b\m�U�X]�zO��h�6[}Ǖ� UtyOJWT��r�Ws�}\�[ 
-                                 g a i n e d _ i t e m s   =   { }  
-                                 i f   s u c c e s s   a n d   o f f e r i n g . g e t ( " e f f e c t " ,   { } ) . g e t ( " t y p e " )   = =   " i t e m " :  
-                                         i t e m _ i d   =   o f f e r i n g [ " e f f e c t " ] [ " i t e m _ i d " ]  
-                                         g a i n e d _ i t e m s [ i t e m _ i d ]   =   1  
-                                  
-                                 p . r e a l m _ p e n d i n g _ c h o i c e   =   N o n e  
-                                 r e t u r n   s u c c e s s ,   m s g ,   p ,   g a i n e d _ i t e m s  
-                         e l s e :  
-                                 r e t u r n   F a l s e ,   f " Ó�ref(��R� Y�Z��\�᫕Y�Z  1 - { l e n ( o f f e r i n g s )   +   1 } ��? ,   p ,   { }  
-                  
-                 e l s e :  
-                         #   ��Y�Z\m)["k�X�W�[�e�wY�G��t�?  
-                         c h o i c e s   =   c h o i c e _ d a t a . g e t ( " c h o i c e s " ,   [ ] )  
-                         e v e n t _ d a t a   =   c h o i c e _ d a t a . g e t ( " e v e n t _ d a t a " ,   { } )  
-                          
-                         #   ̓�0�X��Y�Z(��R� Y0 
-                         s e l e c t e d _ c h o i c e   =   N o n e  
-                         f o r   c h o i c e   i n   c h o i c e s :  
-                                 i f   c h o i c e . g e t ( " i d " )   = =   c h o i c e _ n u m :  
-                                         s e l e c t e d _ c h o i c e   =   c h o i c e  
-                                         b r e a k  
-                          
-                         i f   n o t   s e l e c t e d _ c h o i c e :  
-                                 r e t u r n   F a l s e ,   f " Ó�ref(��R� Y�Z��\�᫕Y�Z  { ' ,   ' . j o i n ( [ s t r ( c [ ' i d ' ] )   f o r   c   i n   c h o i c e s ] ) }   �m`�k�m� �mB� ? ,   p ,   { }  
-                          
-                         #   �o�R�`��Y�Z�dIp 
-                         r e a l m _ i n s t a n c e   =   p . g e t _ r e a l m _ i n s t a n c e ( )  
-                         r e w a r d _ m u l t   =   1 . 0  
-                         i f   r e a l m _ i n s t a n c e :  
-                                 r e w a r d _ m u l t   =   r e a l m _ i n s t a n c e . t h e m e _ m o d i f i e r s . g e t ( " r e w a r d _ m u l t i p l i e r " ,   1 . 0 )  
-                          
-                         l o g ,   p ,   g a i n e d _ i t e m s   =   E v e n t P r o c e s s o r . p r o c e s s _ c h o i c e _ r e s u l t (  
-                                 s e l e c t e d _ c h o i c e ,   c h o i c e _ n u m ,   p ,   p . l e v e l _ i n d e x  
-                         )  
-                          
-                         #   4d�ede�o'h�YJ��]�]R�4O~V/u?  
-                         #   ( p r o c e s s _ c h o i c e _ r e s u l t   �[,��|�o�R�`\m�U}igkwVY�E��i�~��Z~)  
-                          
-                         p . r e a l m _ p e n d i n g _ c h o i c e   =   N o n e  
-                         r e t u r n   T r u e ,   " \ n " . j o i n ( l o g ) ,   p ,   g a i n e d _ i t e m s  
- 
+        return log, p
+
+    async def handle_player_choice(self, player: Player, choice_num: int) -> Tuple[bool, str, Player, Dict[str, int]]:
+        """
+        处理玩家在秘境中的选择
+        
+        Args:
+            player: 玩家对象
+            choice_num: 玩家选择的编号
+            
+        Returns:
+            (success, message, updated_player, gained_items)
+        """
+        p = player.clone()
+        
+        if not p.realm_pending_choice:
+            return False, "当前没有需要选择的事件。", p, {}
+        
+        try:
+            choice_data = json.loads(p.realm_pending_choice)
+        except (json.JSONDecodeError, TypeError):
+            p.realm_pending_choice = None
+            return False, "选择数据异常，已清除。", p, {}
+        
+        choice_type = choice_data.get("type", "choice")
+        
+        if choice_type == "merchant":
+            # 商人事件
+            offerings = choice_data.get("offerings", [])
+            if choice_num == len(offerings) + 1:
+                # 选择不购买
+                p.realm_pending_choice = None
+                return True, "你决定不购买任何东西，继续前进。", p, {}
+            elif 1 <= choice_num <= len(offerings):
+                offering = offerings[choice_num - 1]
+                success, msg, p = EventProcessor.process_merchant_purchase(offering, p)
+                
+                # 如果购买了物品类型，需要添加到背包
+                gained_items = {}
+                if success and offering.get("effect", {}).get("type") == "item":
+                    item_id = offering["effect"]["item_id"]
+                    gained_items[item_id] = 1
+                
+                p.realm_pending_choice = None
+                return success, msg, p, gained_items
+            else:
+                return False, f"无效的选择，请选择 1-{len(offerings) + 1}。", p, {}
+        
+        else:
+            # 选择事件（分岔路口等）
+            choices = choice_data.get("choices", [])
+            event_data = choice_data.get("event_data", {})
+            
+            # 查找选择的选项
+            selected_choice = None
+            for choice in choices:
+                if choice.get("id") == choice_num:
+                    selected_choice = choice
+                    break
+            
+            if not selected_choice:
+                return False, f"无效的选择，请选择 {', '.join([str(c['id']) for c in choices])} 中的一个。", p, {}
+            
+            # 处理选择结果
+            realm_instance = p.get_realm_instance()
+            reward_mult = 1.0
+            if realm_instance:
+                reward_mult = realm_instance.theme_modifiers.get("reward_multiplier", 1.0)
+            
+            log, p, gained_items = EventProcessor.process_choice_result(
+                selected_choice, choice_num, p, p.level_index
+            )
+            
+            p.realm_pending_choice = None
+            return True, "\n".join(log), p, gained_items
