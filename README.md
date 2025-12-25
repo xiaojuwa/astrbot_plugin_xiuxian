@@ -1,7 +1,7 @@
 # AstrBot 文字修仙插件
 
 <p align="center">
-  <img src="https://img.shields.io/badge/版本-v2.6.5-blue" alt="Version">
+  <img src="https://img.shields.io/badge/版本-v2.6.6-blue" alt="Version">
   <img src="https://img.shields.io/badge/框架-AstrBot-green" alt="Framework">
   <img src="https://img.shields.io/badge/数据库版本-v21-orange" alt="DB Version">
   <img src="https://img.shields.io/badge/许可证-AGPL--3.0-red" alt="License">
@@ -692,7 +692,15 @@ astrbot_plugin_xiuxian/
 
 ## 更新日志
 
-### v2.6.5 (最新) - 道具平衡与限购系统
+### v2.6.6 (最新) - GM指令修复
+
+**🔧 Bug修复**:
+- **GM指令参数解析错误**：修复GM加灵石、GM加修为、GM设境界、GM加物品、GM设生命等指令无法正确接收参数的问题
+  - 修复前：`/GM设生命 1733533842 99999` 只能读取到QQ号，数值被丢弃
+  - 修复后：正确解析QQ号和数值两个参数
+  - 影响命令：GM加灵石、GM加修为、GM设境界、GM加物品、GM设生命
+
+### v2.6.5 - 道具平衡与限购系统
 
 **⚠️ 道具价格平衡调整：**
 - **虎力丹**：1,500 → 800 灵石

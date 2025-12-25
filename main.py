@@ -104,7 +104,7 @@ CMD_REDEEM = "橘的恩赐"
     "astrbot_plugin_xiuxian",
     "xiaojuwa",
     "基于astrbot框架的文字修仙游戏",
-    "v2.6.5", # 版本号 - 道具平衡与限购系统
+    "v2.6.6", # 版本号 - 修复GM指令参数解析
     "https://github.com/xiaojuwa/astrbot_plugin_xiuxian"
 )
 class XiuXianPlugin(Star):
@@ -581,43 +581,58 @@ class XiuXianPlugin(Star):
     # --- v2.5.0 GM管理员指令 ---
     @filter.permission_type(filter.PermissionType.ADMIN)
     @filter.command(CMD_GM_ADD_GOLD, "GM添加灵石")
-    async def handle_gm_add_gold(self, event: AstrMessageEvent, amount: str = ""):
+    async def handle_gm_add_gold(self, event: AstrMessageEvent):
         if not self._check_access(event):
             await self._send_access_denied_message(event)
             return
-        async for r in self.gm_handler.handle_gm_add_gold(event, amount): yield r
+        # 获取完整参数：去除命令本身，保留后续所有内容
+        msg = event.message_str.strip()
+        params = msg.replace(CMD_GM_ADD_GOLD, "", 1).strip()
+        async for r in self.gm_handler.handle_gm_add_gold(event, params): yield r
 
     @filter.permission_type(filter.PermissionType.ADMIN)
     @filter.command(CMD_GM_ADD_EXP, "GM添加修为")
-    async def handle_gm_add_exp(self, event: AstrMessageEvent, amount: str = ""):
+    async def handle_gm_add_exp(self, event: AstrMessageEvent):
         if not self._check_access(event):
             await self._send_access_denied_message(event)
             return
-        async for r in self.gm_handler.handle_gm_add_exp(event, amount): yield r
+        msg = event.message_str.strip()
+        params = msg.replace(CMD_GM_ADD_EXP, "", 1).strip()
+        async for r in self.gm_handler.handle_gm_add_exp(event, params): yield r
 
     @filter.permission_type(filter.PermissionType.ADMIN)
     @filter.command(CMD_GM_SET_LEVEL, "GM设置境界")
-    async def handle_gm_set_level(self, event: AstrMessageEvent, level_index: str = ""):
+    async def handle_gm_set_level(self, event: AstrMessageEvent):
         if not self._check_access(event):
             await self._send_access_denied_message(event)
             return
-        async for r in self.gm_handler.handle_gm_set_level(event, level_index): yield r
+        msg = event.message_str.strip()
+        params = msg.replace(CMD_GM_SET_LEVEL, "", 1).strip()
+        async for r in self.gm_handler.handle_gm_set_level(event, params): yield r
 
     @filter.permission_type(filter.PermissionType.ADMIN)
     @filter.command(CMD_GM_ADD_ITEM, "GM添加物品")
-    async def handle_gm_add_item(self, event: AstrMessageEvent, item_name: str = "", quantity: str = "1"):
+    async def handle_gm_add_item(self, event: AstrMessageEvent):
         if not self._check_access(event):
             await self._send_access_denied_message(event)
             return
+        msg = event.message_str.strip()
+        params = msg.replace(CMD_GM_ADD_ITEM, "", 1).strip()
+        # params可能是 "QQ号 物品名 数量" 或 "@用户 物品名 数量"
+        parts = params.split()
+        item_name = " ".join(parts[:-1]) if len(parts) > 1 else ""
+        quantity = parts[-1] if parts else "1"
         async for r in self.gm_handler.handle_gm_add_item(event, item_name, quantity): yield r
 
     @filter.permission_type(filter.PermissionType.ADMIN)
     @filter.command(CMD_GM_SET_HP, "GM设置生命值")
-    async def handle_gm_set_hp(self, event: AstrMessageEvent, hp: str = ""):
+    async def handle_gm_set_hp(self, event: AstrMessageEvent):
         if not self._check_access(event):
             await self._send_access_denied_message(event)
             return
-        async for r in self.gm_handler.handle_gm_set_hp(event, hp): yield r
+        msg = event.message_str.strip()
+        params = msg.replace(CMD_GM_SET_HP, "", 1).strip()
+        async for r in self.gm_handler.handle_gm_set_hp(event, params): yield r
 
     @filter.permission_type(filter.PermissionType.ADMIN)
     @filter.command(CMD_GM_RESET_PLAYER, "GM重置玩家")
