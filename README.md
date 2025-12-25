@@ -1,9 +1,9 @@
 # AstrBot 文字修仙插件
 
 <p align="center">
-  <img src="https://img.shields.io/badge/版本-v2.6.1-blue" alt="Version">
+  <img src="https://img.shields.io/badge/版本-v2.6.2-blue" alt="Version">
   <img src="https://img.shields.io/badge/框架-AstrBot-green" alt="Framework">
-  <img src="https://img.shields.io/badge/数据库版本-v17-orange" alt="DB Version">
+  <img src="https://img.shields.io/badge/数据库版本-v18-orange" alt="DB Version">
   <img src="https://img.shields.io/badge/许可证-AGPL--3.0-red" alt="License">
 </p>
 
@@ -464,7 +464,13 @@ astrbot_plugin_xiuxian/
 
 ## 更新日志
 
-### v2.6.1 (最新)
+### v2.6.2 (最新)
+
+**Bug修复：**
+- **数据库迁移修复**：修复 v2.6.1 中缺少数据库迁移导致玩家无法进入秘境（`realm_pending_choice` 字段缺失）
+- **数据库版本**：v17 → v18，自动为现有玩家添加秘境选择字段
+
+### v2.6.1
 
 **秘境系统重新设计 - 重大更新**
 

@@ -5,7 +5,7 @@ from typing import Dict, Callable, Awaitable
 from astrbot.api import logger
 from ..config_manager import ConfigManager
 
-LATEST_DB_VERSION = 17 # v2.5.3 丹药中毒机制
+LATEST_DB_VERSION = 18 # v2.6.1 秘境系统重新设计
 
 MIGRATION_TASKS: Dict[int, Callable[[aiosqlite.Connection, ConfigManager], Awaitable[None]]] = {}
 
@@ -659,7 +659,7 @@ async def _create_all_tables_v11(conn: aiosqlite.Connection):
             alchemy_level INTEGER NOT NULL DEFAULT 1, alchemy_exp INTEGER NOT NULL DEFAULT 0,
             smithing_level INTEGER NOT NULL DEFAULT 1, smithing_exp INTEGER NOT NULL DEFAULT 0,
             furnace_level INTEGER NOT NULL DEFAULT 1, forge_level INTEGER NOT NULL DEFAULT 1,
-            unlocked_recipes TEXT DEFAULT '[]',
+            unlocked_recipes TEXT DEFAULT '[]', realm_pending_choice TEXT,
             FOREIGN KEY (sect_id) REFERENCES sects (id) ON DELETE SET NULL
         )
     """)
@@ -957,3 +957,18 @@ async def _upgrade_v16_to_v17(conn: aiosqlite.Connection, config_manager: Config
     """)
 
     logger.info("v16 -> v17 数据库迁移完成！丹药中毒机制已添加。")
+
+@migration(18)
+async def _upgrade_v17_to_v18(conn: aiosqlite.Connection, config_manager: ConfigManager):
+    """添加 realm_pending_choice 字段用于秘境选择事件"""
+    logger.info("开始执行 v17 -> v18 数据库迁移（秘境系统重新设计）...")
+
+    # 为 players 表添加 realm_pending_choice 字段
+    async with conn.execute("PRAGMA table_info(players)") as cursor:
+        columns = [row['name'] for row in await cursor.fetchall()]
+        
+        if 'realm_pending_choice' not in columns:
+            await conn.execute("ALTER TABLE players ADD COLUMN realm_pending_choice TEXT")
+            logger.info("已添加 realm_pending_choice 字段")
+
+    logger.info("v17 -> v18 数据库迁移完成！秘境系统已升级。")
