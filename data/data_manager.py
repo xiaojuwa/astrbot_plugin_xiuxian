@@ -912,3 +912,41 @@ class DataBase:
         )
         await self.conn.commit()
         return damage
+
+    # ========== 每日限制系统相关方法 (v2.6.4) ==========
+
+    async def get_daily_tribulation_count(self, user_id: str, tribulation_date: str) -> int:
+        """获取玩家当日天劫次数"""
+        async with self.conn.execute(
+            "SELECT count FROM daily_tribulation_count WHERE user_id = ? AND tribulation_date = ?",
+            (user_id, tribulation_date)
+        ) as cursor:
+            row = await cursor.fetchone()
+            return row["count"] if row else 0
+
+    async def increment_tribulation_count(self, user_id: str, tribulation_date: str):
+        """增加玩家当日天劫次数"""
+        await self.conn.execute("""
+            INSERT INTO daily_tribulation_count (user_id, tribulation_date, count)
+            VALUES (?, ?, 1)
+            ON CONFLICT(user_id, tribulation_date) DO UPDATE SET count = count + 1
+        """, (user_id, tribulation_date))
+        await self.conn.commit()
+
+    async def get_daily_realm_count(self, user_id: str, realm_date: str) -> int:
+        """获取玩家当日秘境次数"""
+        async with self.conn.execute(
+            "SELECT count FROM daily_realm_count WHERE user_id = ? AND realm_date = ?",
+            (user_id, realm_date)
+        ) as cursor:
+            row = await cursor.fetchone()
+            return row["count"] if row else 0
+
+    async def increment_realm_count(self, user_id: str, realm_date: str):
+        """增加玩家当日秘境次数"""
+        await self.conn.execute("""
+            INSERT INTO daily_realm_count (user_id, realm_date, count)
+            VALUES (?, ?, 1)
+            ON CONFLICT(user_id, realm_date) DO UPDATE SET count = count + 1
+        """, (user_id, realm_date))
+        await self.conn.commit()

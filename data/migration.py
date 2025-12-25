@@ -5,7 +5,7 @@ from typing import Dict, Callable, Awaitable
 from astrbot.api import logger
 from ..config_manager import ConfigManager
 
-LATEST_DB_VERSION = 19 # v2.6.3 修复realm_pending_choice字段缺失
+LATEST_DB_VERSION = 20 # v2.6.4 添加每日限制系统
 
 MIGRATION_TASKS: Dict[int, Callable[[aiosqlite.Connection, ConfigManager], Awaitable[None]]] = {}
 
@@ -991,3 +991,36 @@ async def _upgrade_v18_to_v19(conn: aiosqlite.Connection, config_manager: Config
             logger.info("realm_pending_choice 字段已存在")
 
     logger.info("v18 -> v19 数据库迁移完成！")
+
+@migration(20)
+async def _upgrade_v19_to_v20(conn: aiosqlite.Connection, config_manager: ConfigManager):
+    """v2.6.4: 添加每日限制系统 - 天劫和秘境每日次数限制"""
+    logger.info("开始执行 v19 -> v20 数据库迁移（每日限制系统）...")
+
+    # 创建每日天劫次数表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS daily_tribulation_count (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            tribulation_date TEXT NOT NULL,
+            count INTEGER NOT NULL DEFAULT 0,
+            UNIQUE(user_id, tribulation_date),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+    logger.info("✅ 已创建 daily_tribulation_count 表")
+
+    # 创建每日秘境次数表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS daily_realm_count (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            realm_date TEXT NOT NULL,
+            count INTEGER NOT NULL DEFAULT 0,
+            UNIQUE(user_id, realm_date),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+    logger.info("✅ 已创建 daily_realm_count 表")
+
+    logger.info("v19 -> v20 数据库迁移完成！每日限制系统已添加。")

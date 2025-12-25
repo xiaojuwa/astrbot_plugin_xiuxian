@@ -58,12 +58,31 @@ class RealmHandler:
             if parts[2] in diff_mapping:
                 difficulty = diff_mapping[parts[2]]
         
+        # v2.6.4: 检查每日次数限制（10次/天）
+        from datetime import date
+        today = date.today().isoformat()
+        current_count = await self.db.get_daily_realm_count(player.user_id, today)
+        MAX_DAILY_REALM = 10
+        
+        if current_count >= MAX_DAILY_REALM:
+            yield event.plain_result(
+                f"今日秘境探索次数已用完（{current_count}/{MAX_DAILY_REALM}）。\n"
+                f"秘境凶险万分，不宜过度探索，明日再来吧。"
+            )
+            return
+        
         success, msg, updated_player = await self.realm_manager.start_session(
             player, CMD_REALM_ADVANCE, realm_type, difficulty
         )
         
         if success and updated_player:
+            # 成功进入秘境，增加计数
+            await self.db.increment_realm_count(player.user_id, today)
             await self.db.update_player(updated_player)
+            
+            # 添加剩余次数提示
+            remaining = MAX_DAILY_REALM - current_count - 1
+            msg += f"\n\n📊 今日剩余秘境次数：{remaining}/{MAX_DAILY_REALM}"
             
             # 完成每日任务
             if self.daily_task_handler:

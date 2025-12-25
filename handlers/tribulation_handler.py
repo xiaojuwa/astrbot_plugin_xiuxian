@@ -136,13 +136,34 @@ class TribulationHandler:
             yield event.plain_result("道友当前境界无需渡劫，继续修炼突破即可。")
             return
 
+        # v2.6.4: 检查每日次数限制（3次/天）
+        from datetime import date
+        today = date.today().isoformat()
+        current_count = await self.db.get_daily_tribulation_count(player.user_id, today)
+        MAX_DAILY_TRIBULATION = 3
+        
+        if current_count >= MAX_DAILY_TRIBULATION:
+            yield event.plain_result(
+                f"今日渡劫次数已用完（{current_count}/{MAX_DAILY_TRIBULATION}）。\n"
+                f"天劫乃逆天而行，不可操之过急，明日再试吧。"
+            )
+            return
+
         # 检查玩家状态
         if player.state != "空闲":
             yield event.plain_result(f"道友当前正在「{player.state}」中，无法渡劫。")
             return
 
+        # 开始渡劫前增加计数
+        await self.db.increment_tribulation_count(player.user_id, today)
+        
         # 开始渡劫
         result = await self._process_tribulation(player, tribulation)
+        
+        # 添加剩余次数提示
+        remaining = MAX_DAILY_TRIBULATION - current_count - 1
+        result += f"\n\n今日剩余渡劫次数：{remaining}/{MAX_DAILY_TRIBULATION}"
+        
         yield event.plain_result(result)
 
     async def _process_tribulation(self, player: Player, tribulation: Dict) -> str:
