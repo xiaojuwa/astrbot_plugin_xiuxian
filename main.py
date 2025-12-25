@@ -33,6 +33,7 @@ CMD_FIGHT_BOSS = "讨伐boss"
 CMD_ENTER_REALM = "探索秘境"
 CMD_REALM_ADVANCE = "前进"
 CMD_LEAVE_REALM = "离开秘境"
+CMD_REALM_CHOICE = "选择"  # 秘境中的选择指令
 
 # 装备相关指令
 CMD_UNEQUIP = "卸下"
@@ -103,7 +104,7 @@ CMD_REDEEM = "橘的恩赐"
     "astrbot_plugin_xiuxian",
     "xiaojuwa",
     "基于astrbot框架的文字修仙游戏",
-    "v2.5.3", # 版本号提升 - 丹药中毒机制
+    "v2.6.1", # 版本号提升 - 丹药中毒机制
     "https://github.com/xiaojuwa/astrbot_plugin_xiuxian"
 )
 class XiuXianPlugin(Star):
@@ -345,6 +346,13 @@ class XiuXianPlugin(Star):
             await self._send_access_denied_message(event)
             return
         async for r in self.realm_handler.handle_leave_realm(event): yield r
+    
+    @filter.command(CMD_REALM_CHOICE, "在秘境事件中做出选择")
+    async def handle_realm_choice(self, event: AstrMessageEvent):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.realm_handler.handle_realm_choice(event): yield r
 
     # --- 装备指令 ---
     @filter.command(CMD_UNEQUIP, "卸下一件装备")

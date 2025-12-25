@@ -27,8 +27,11 @@ class Item:
 class FloorEvent:
     """秘境层级事件数据模型"""
 
-    type: str
+    type: str  # 事件类型：monster, boss, treasure, trap, choice, blessing, merchant, elite, mystery, environment
     data: Dict[str, Any] = field(default_factory=dict)
+    choices: Optional[List[Dict[str, Any]]] = None  # 玩家可选择的选项，每个选项包含 {"id": int, "text": str, "result": dict}
+    description: str = ""  # 事件描述文本
+    requires_choice: bool = False  # 是否需要玩家做出选择
 
 @dataclass
 class RealmInstance:
@@ -37,6 +40,9 @@ class RealmInstance:
     id: str
     total_floors: int
     floors: List[FloorEvent]
+    realm_type: str = "trial"  # 秘境类型：trial(试炼), treasure(宝藏), beast(妖兽), ruin(遗迹), ghost(幽冥)
+    difficulty: str = "normal"  # 难度：normal(普通), hard(困难), hell(地狱)
+    theme_modifiers: Dict[str, Any] = field(default_factory=dict)  # 主题修正值
 
 @dataclass
 class Player:
@@ -59,6 +65,7 @@ class Player:
     realm_id: Optional[str] = None
     realm_floor: int = 0
     realm_data: Optional[str] = None
+    realm_pending_choice: Optional[str] = None  # JSON存储待选择的事件数据
     
     # 装备槽位
     equipped_weapon: Optional[str] = None
