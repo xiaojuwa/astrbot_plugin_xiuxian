@@ -15,7 +15,50 @@ CMD_SELL = "出售"
 MAX_DAILY_SELL = 5  # 每日最大回购次数
 SELL_RATIO = 0.4    # 回购价格比例（40%）
 
+# 丹药中毒机制常量
+PILL_SAFE_COUNT = 3       # 安全服用数量（1-3颗无风险）
+PILL_POISON_MAX = 10      # 必定中毒数量（10颗及以上100%中毒）
+PILL_POISON_HP_LOSS = 0.5 # 中毒时血量损失比例（50%）
+
 __all__ = ["ShopHandler"]
+
+
+def calculate_pill_poison_chance(quantity: int) -> float:
+    """计算丹药中毒概率
+
+    Args:
+        quantity: 服用数量
+
+    Returns:
+        中毒概率 (0.0 - 1.0)
+    """
+    if quantity <= PILL_SAFE_COUNT:
+        return 0.0  # 1-3颗安全
+    elif quantity >= PILL_POISON_MAX:
+        return 1.0  # 10颗及以上必定中毒
+    else:
+        # 4-9颗：每多一颗增加约10%概率
+        # 4颗=10%, 5颗=20%, ..., 9颗=60%
+        return (quantity - PILL_SAFE_COUNT) * 0.1
+
+
+def check_pill_poison(quantity: int) -> Tuple[bool, float]:
+    """检查是否中毒
+
+    Args:
+        quantity: 服用数量
+
+    Returns:
+        (是否中毒, 中毒概率)
+    """
+    poison_chance = calculate_pill_poison_chance(quantity)
+    if poison_chance <= 0:
+        return False, 0.0
+    if poison_chance >= 1.0:
+        return True, 1.0
+
+    is_poisoned = random.random() < poison_chance
+    return is_poisoned, poison_chance
 
 def calculate_item_effect(item_info: Optional[Item], quantity: int) -> Tuple[Optional[PlayerEffect], str]:
     if not item_info or not (effect_config := item_info.effect):
@@ -307,71 +350,120 @@ class ShopHandler:
 
         elif target_item_info.buff_effect:
             # 丹药buff - 临时属性加成
+            # 检查丹药中毒
+            is_poisoned, poison_chance = check_pill_poison(quantity)
+
+            if is_poisoned:
+                # 中毒：消耗丹药，扣除50%血量，无任何增益
+                p_clone = player.clone()
+                hp_loss = int(p_clone.hp * PILL_POISON_HP_LOSS)
+                p_clone.hp = max(1, p_clone.hp - hp_loss)  # 至少保留1点血
+
+                # 消耗物品
+                await self.db.remove_item_from_inventory(player.user_id, target_item_id, quantity)
+                await self.db.update_player(p_clone)
+
+                poison_msg = (
+                    f"☠️ 丹毒发作！\n"
+                    f"你一口气服下了 {quantity} 颗「{item_name}」，药力过猛导致丹毒入体！\n"
+                    f"丹药效果完全失效，损失 {hp_loss} 点生命！\n"
+                    f"当前生命：{p_clone.hp}\n"
+                    f"💡 提示：单次服用超过{PILL_SAFE_COUNT}颗丹药有中毒风险，{PILL_POISON_MAX}颗必定中毒"
+                )
+                yield event.plain_result(poison_msg)
+                return
+
             p_clone = player.clone()
             buff = target_item_info.buff_effect
             buff_type = buff.get("type", "attack_buff")
             buff_value = buff.get("value", 0) * quantity
             buff_duration = buff.get("duration", 3)
-            
+
             # 添加buff
             p_clone.add_buff(buff_type, buff_value, buff_duration)
-            
+
             # 消耗物品
             await self.db.remove_item_from_inventory(player.user_id, target_item_id, quantity)
             await self.db.update_player(p_clone)
-            
+
             buff_names = {"attack_buff": "攻击", "defense_buff": "防御", "hp_buff": "生命上限"}
             buff_name = buff_names.get(buff_type, "未知")
             msg = (
                 f"你使用了 {quantity} 个「{item_name}」！\n"
                 f"获得buff：{buff_name}+{buff_value}，持续{buff_duration}场战斗"
             )
-            
+
+            # 如果有中毒风险但未中毒，给予提示
+            if poison_chance > 0:
+                msg += f"\n⚠️ 侥幸未中毒（中毒概率：{int(poison_chance * 100)}%）"
+
             # 完成每日任务
             if self.daily_task_handler:
                 completed = await self.daily_task_handler.complete_task(player.user_id, "use_item")
                 if completed:
                     msg += "\n🎯 每日任务「丹药养生」已完成！"
-            
+
             yield event.plain_result(msg)
 
         elif target_item_info.effect:
             effect_type = target_item_info.effect.get("type")
-            
-            # 特殊效果：重置灵根
+
+            # 特殊效果：重置灵根（不受中毒机制影响，且只能用1颗）
             if effect_type == "reroll_spirit_root":
                 if quantity > 1:
                     yield event.plain_result("逆天改命丹每次只能使用一颗。")
                     return
-                
+
                 # 消耗物品
                 await self.db.remove_item_from_inventory(player.user_id, target_item_id, 1)
-                
+
                 # 重置灵根
-                import random
                 root_types = ["金", "木", "水", "火", "土", "异", "天", "融合", "混沌"]
                 old_root = player.spiritual_root
                 new_root_name = random.choice(root_types)
-                
+
                 p_clone = player.clone()
                 p_clone.spiritual_root = f"{new_root_name}灵根"
                 await self.db.update_player(p_clone)
-                
+
                 msg = (
                     f"你服下了「{item_name}」，体内灵气翻涌！\n"
                     f"原有的「{old_root}」已化为全新的「{p_clone.spiritual_root}」！\n"
                     f"祝道友仙途坦荡，大道可期！"
                 )
-                
+
                 # 完成每日任务
                 if self.daily_task_handler:
                     completed = await self.daily_task_handler.complete_task(player.user_id, "use_item")
                     if completed:
                         msg += "\n🎯 每日任务「丹药养生」已完成！"
-                
+
                 yield event.plain_result(msg)
                 return
-            
+
+            # 普通丹药效果（回血、加修为、加灵石等）- 检查中毒
+            is_poisoned, poison_chance = check_pill_poison(quantity)
+
+            if is_poisoned:
+                # 中毒：消耗丹药，扣除50%血量，无任何增益
+                p_clone = player.clone()
+                hp_loss = int(p_clone.hp * PILL_POISON_HP_LOSS)
+                p_clone.hp = max(1, p_clone.hp - hp_loss)  # 至少保留1点血
+
+                # 消耗物品
+                await self.db.remove_item_from_inventory(player.user_id, target_item_id, quantity)
+                await self.db.update_player(p_clone)
+
+                poison_msg = (
+                    f"☠️ 丹毒发作！\n"
+                    f"你一口气服下了 {quantity} 颗「{item_name}」，药力过猛导致丹毒入体！\n"
+                    f"丹药效果完全失效，损失 {hp_loss} 点生命！\n"
+                    f"当前生命：{p_clone.hp}\n"
+                    f"💡 提示：单次服用超过{PILL_SAFE_COUNT}颗丹药有中毒风险，{PILL_POISON_MAX}颗必定中毒"
+                )
+                yield event.plain_result(poison_msg)
+                return
+
             # 消耗品 - 直接效果
             effect, msg = calculate_item_effect(target_item_info, quantity)
             if not effect:
@@ -385,6 +477,10 @@ class ShopHandler:
             success = await self.db.transactional_apply_item_effect(player.user_id, target_item_id, quantity, effect, actual_max_hp)
 
             if success:
+                # 如果有中毒风险但未中毒，给予提示
+                if poison_chance > 0:
+                    msg += f"\n⚠️ 侥幸未中毒（中毒概率：{int(poison_chance * 100)}%）"
+
                 # 完成每日任务
                 if self.daily_task_handler:
                     completed = await self.daily_task_handler.complete_task(player.user_id, "use_item")

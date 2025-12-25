@@ -5,7 +5,7 @@ from typing import Dict, Callable, Awaitable
 from astrbot.api import logger
 from ..config_manager import ConfigManager
 
-LATEST_DB_VERSION = 16 # v2.5.0 GM激活码管理系统
+LATEST_DB_VERSION = 17 # v2.5.3 丹药中毒机制
 
 MIGRATION_TASKS: Dict[int, Callable[[aiosqlite.Connection, ConfigManager], Awaitable[None]]] = {}
 
@@ -807,6 +807,39 @@ async def _create_all_tables_v11(conn: aiosqlite.Connection):
             FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
         )
     """)
+    # GM激活码表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS gm_redeem_codes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            code TEXT NOT NULL UNIQUE,
+            gold INTEGER DEFAULT 0,
+            exp INTEGER DEFAULT 0,
+            max_uses INTEGER DEFAULT 100,
+            description TEXT DEFAULT '',
+            created_at REAL NOT NULL
+        )
+    """)
+    # GM激活码物品奖励表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS gm_redeem_code_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            code TEXT NOT NULL,
+            item_name TEXT NOT NULL,
+            quantity INTEGER DEFAULT 1,
+            FOREIGN KEY (code) REFERENCES gm_redeem_codes (code) ON DELETE CASCADE
+        )
+    """)
+    # 每日丹药服用计数表（丹药中毒机制）
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS daily_pill_count (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            pill_date TEXT NOT NULL,
+            count INTEGER NOT NULL DEFAULT 0,
+            UNIQUE(user_id, pill_date),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
 
 @migration(15)
 async def _upgrade_v14_to_v15(conn: aiosqlite.Connection, config_manager: ConfigManager):
@@ -905,3 +938,22 @@ async def _upgrade_v15_to_v16(conn: aiosqlite.Connection, config_manager: Config
     """)
 
     logger.info("v14 -> v15 数据库迁移完成！GM激活码管理系统已添加。")
+
+@migration(17)
+async def _upgrade_v16_to_v17(conn: aiosqlite.Connection, config_manager: ConfigManager):
+    """v2.5.3: 添加丹药中毒机制 - 每日丹药服用计数表"""
+    logger.info("开始执行 v16 -> v17 数据库迁移（丹药中毒机制）...")
+
+    # 创建每日丹药服用计数表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS daily_pill_count (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            pill_date TEXT NOT NULL,
+            count INTEGER NOT NULL DEFAULT 0,
+            UNIQUE(user_id, pill_date),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+
+    logger.info("v16 -> v17 数据库迁移完成！丹药中毒机制已添加。")

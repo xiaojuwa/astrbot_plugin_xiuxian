@@ -872,3 +872,43 @@ class DataBase:
         ) as cursor:
             rows = await cursor.fetchall()
             return [{"name": row["item_name"], "quantity": row["quantity"]} for row in rows]
+
+    # ========== 丹药中毒机制相关方法 ==========
+
+    async def get_daily_pill_count(self, user_id: str, pill_date: str) -> int:
+        """获取玩家当日丹药服用次数"""
+        async with self.conn.execute(
+            "SELECT count FROM daily_pill_count WHERE user_id = ? AND pill_date = ?",
+            (user_id, pill_date)
+        ) as cursor:
+            row = await cursor.fetchone()
+            return row["count"] if row else 0
+
+    async def increment_pill_count(self, user_id: str, pill_date: str, amount: int = 1):
+        """增加玩家当日丹药服用次数"""
+        await self.conn.execute("""
+            INSERT INTO daily_pill_count (user_id, pill_date, count)
+            VALUES (?, ?, ?)
+            ON CONFLICT(user_id, pill_date) DO UPDATE SET count = count + ?
+        """, (user_id, pill_date, amount, amount))
+        await self.conn.commit()
+
+    async def apply_poison_damage(self, user_id: str, damage_percent: float = 0.5) -> int:
+        """应用中毒伤害，扣除玩家当前血量的指定百分比，返回扣除的血量"""
+        async with self.conn.execute(
+            "SELECT hp FROM players WHERE user_id = ?", (user_id,)
+        ) as cursor:
+            row = await cursor.fetchone()
+            if not row:
+                return 0
+            current_hp = row["hp"]
+
+        damage = int(current_hp * damage_percent)
+        new_hp = max(1, current_hp - damage)  # 至少保留1点血量
+
+        await self.conn.execute(
+            "UPDATE players SET hp = ? WHERE user_id = ?",
+            (new_hp, user_id)
+        )
+        await self.conn.commit()
+        return damage
