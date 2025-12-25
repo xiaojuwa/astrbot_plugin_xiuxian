@@ -5,7 +5,7 @@ from astrbot.api.event import AstrMessageEvent, filter
 from .data import DataBase, MigrationManager
 from .config_manager import ConfigManager
 from .handlers import (
-    MiscHandler, PlayerHandler, ShopHandler, SectHandler, CombatHandler, RealmHandler,
+    MiscHandler, PlayerHandler, ShopHandler, SectHandler, SectShopHandler, CombatHandler, RealmHandler,
     EquipmentHandler, RankingHandler, DailyTaskHandler, AdventureHandler, TribulationHandler,
     BountyHandler, TradeHandler, CraftingHandler, GMHandler, RedeemHandler
 )
@@ -23,10 +23,13 @@ CMD_SHOP = "商店"
 CMD_BACKPACK = "我的背包"
 CMD_BUY = "购买"
 CMD_USE_ITEM = "使用"
+# 宗门相关指令
 CMD_CREATE_SECT = "创建宗门"
 CMD_JOIN_SECT = "加入宗门"
-CMD_LEAVE_SECT = "退出宗门"
+CMD_LEAVE_SECT = "离开宗门"
 CMD_MY_SECT = "我的宗门"
+CMD_SECT_SHOP = "宗门商店"
+CMD_SECT_EXCHANGE = "兑换"
 CMD_SPAR = "切磋"
 CMD_BOSS_LIST = "查看世界boss"
 CMD_FIGHT_BOSS = "讨伐boss"
@@ -104,7 +107,7 @@ CMD_REDEEM = "橘的恩赐"
     "astrbot_plugin_xiuxian",
     "xiaojuwa",
     "基于astrbot框架的文字修仙游戏",
-    "v2.6.6", # 版本号 - 修复GM指令参数解析
+    "v2.7.0", # 版本号 - 宗门商店系统
     "https://github.com/xiaojuwa/astrbot_plugin_xiuxian"
 )
 class XiuXianPlugin(Star):
@@ -122,6 +125,7 @@ class XiuXianPlugin(Star):
         self.player_handler = PlayerHandler(self.db, self.config, self.config_manager)
         self.shop_handler = ShopHandler(self.db, self.config_manager, self.config) # 传入config
         self.sect_handler = SectHandler(self.db, self.config, self.config_manager)
+        self.sect_shop_handler = SectShopHandler(self.db, self.config, self.config_manager) # Instantiated SectShopHandler
         self.combat_handler = CombatHandler(self.db, self.config, self.config_manager)
         self.realm_handler = RealmHandler(self.db, self.config, self.config_manager)
         self.equipment_handler = EquipmentHandler(self.db, self.config_manager)
@@ -304,6 +308,21 @@ class XiuXianPlugin(Star):
             await self._send_access_denied_message(event)
             return
         async for r in self.sect_handler.handle_my_sect(event): yield r
+    
+    # --- v2.7.0 宗门商店指令 ---
+    @filter.command(CMD_SECT_SHOP, "查看宗门商店")
+    async def handle_sect_shop(self, event: AstrMessageEvent):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.sect_shop_handler.handle_sect_shop(event): yield r
+    
+    @filter.command(CMD_SECT_EXCHANGE, "兑换宗门商品")
+    async def handle_sect_exchange(self, event: AstrMessageEvent, item_name: str, quantity: str = "1"):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.sect_shop_handler.handle_sect_exchange(event, item_name, quantity): yield r
         
     @filter.command(CMD_SPAR, "与其他玩家切磋")
     async def handle_spar(self, event: AstrMessageEvent):

@@ -1,0 +1,130 @@
+{
+    "sect_pill_1": {
+        "name": "宗门培元丹",
+        "type": "丹药",
+        "contribution_cost": 150,
+        "sect_level_required": 1,
+        "daily_limit": 5,
+        "description": "宗门独有的培元丹药，可增加修为。",
+        "effect": {
+            "type": "add_exp",
+            "value": 1500
+        }
+    },
+    "sect_pill_2": {
+        "name": "宗门破境丹",
+        "type": "丹药",
+        "contribution_cost": 600,
+        "sect_level_required": 3,
+        "daily_limit": 2,
+        "description": "提升突破成功率的珍贵丹药。",
+        "effect": {
+            "type": "breakthrough_bonus",
+            "value": 20
+        }
+    },
+    "sect_pill_3": {
+        "name": "宗门战神丸",
+        "type": "丹药",
+        "contribution_cost": 300,
+        "sect_level_required": 2,
+        "daily_limit": 3,
+        "description": "综合提升战斗属性的丹药。",
+        "effect": {
+            "type": "buff",
+            "attack": 35,
+            "defense": 20,
+            "duration": 5
+        }
+    },
+    "sect_pill_4": {
+        "name": "宗门聚灵散",
+        "type": "丹药",
+        "contribution_cost": 200,
+        "sect_level_required": 1,
+        "daily_limit": 0,
+        "description": "暂时提升修炼速度的丹药。",
+        "effect": {
+            "type": "cultivation_buff",
+            "value": 30,
+            "duration_minutes": 60
+        }
+    },
+    "sect_material_1": {
+        "name": "精铁矿石包",
+        "type": "材料",
+        "contribution_cost": 100,
+        "sect_level_required": 1,
+        "daily_limit": 10,
+        "description": "包含5个精铁矿石，炼器必备。",
+        "effect": {
+            "type": "material",
+            "item_id": "2001",
+            "quantity": 5
+        }
+    },
+    "sect_material_2": {
+        "name": "灵草礼包",
+        "type": "材料",
+        "contribution_cost": 120,
+        "sect_level_required": 1,
+        "daily_limit": 10,
+        "description": "包含5个随机炼丹材料。",
+        "effect": {
+            "type": "random_material",
+            "count": 5,
+            "rank": "珍品"
+        }
+    },
+    "sect_skill_1": {
+        "name": "宗门剑诀",
+        "type": "功法",
+        "contribution_cost": 800,
+        "sect_level_required": 3,
+        "daily_limit": 0,
+        "description": "宗门传承剑法，永久提升攻击力。",
+        "effect": {
+            "type": "permanent_buff",
+            "stat": "attack",
+            "value": 8
+        }
+    },
+    "sect_skill_2": {
+        "name": "宗门护体诀",
+        "type": "功法",
+        "contribution_cost": 800,
+        "sect_level_required": 3,
+        "daily_limit": 0,
+        "description": "宗门护体功法，永久提升防御力。",
+        "effect": {
+            "type": "permanent_buff",
+            "stat": "defense",
+            "value": 8
+        }
+    },
+    "sect_crystal": {
+        "name": "灵晶",
+        "type": "建筑材料",
+        "contribution_cost": 400,
+        "sect_level_required": 2,
+        "daily_limit": 5,
+        "description": "建筑升级必需的稀有材料。",
+        "effect": {
+            "type": "building_material",
+            "material_type": "crystal"
+        }
+    },
+    "sect_box": {
+        "name": "宗门福袋",
+        "type": "特殊",
+        "contribution_cost": 1500,
+        "sect_level_required": 5,
+        "daily_limit": 1,
+        "description": "随机获得珍品或圣品物品。",
+        "effect": {
+            "type": "random_item",
+            "min_rank": "珍品",
+            "max_rank": "圣品"
+        }
+    }
+}

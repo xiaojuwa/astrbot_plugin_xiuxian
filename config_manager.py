@@ -10,14 +10,17 @@ from .models import Item
 class ConfigManager:
     def __init__(self, base_dir: Path):
         self._base_dir = base_dir
+        self.config_dir = base_dir / "config"
         self._paths = {
-            "level": base_dir / "config" / "level_config.json",
-            "item": base_dir / "config" / "items.json",
-            "boss": base_dir / "config" / "bosses.json",
-            "monster": base_dir / "config" / "monsters.json",
-            "realm": base_dir / "config" / "realms.json",
-            "tag": base_dir / "config" / "tags.json",
-            "recipe": base_dir / "config" / "recipes.json"
+            "level": self.config_dir / "level_config.json",
+            "item": self.config_dir / "items.json",
+            "boss": self.config_dir / "bosses.json",
+            "monster": self.config_dir / "monsters.json",
+            "realm": self.config_dir / "realms.json",
+            "tag": self.config_dir / "tags.json",
+            "recipe": self.config_dir / "recipes.json",
+            "sect_shop": self.config_dir / "sect_shop.json",
+            "sect_buildings": self.config_dir / "sect_buildings.json"
         }
 
         self.level_data: List[dict] = []
@@ -27,6 +30,8 @@ class ConfigManager:
         self.realm_data: Dict[str, dict] = {}
         self.tag_data: Dict[str, dict] = {}
         self.recipe_data: Dict[str, dict] = {}
+        self.sect_shop_data: Dict[str, dict] = {}
+        self.sect_buildings_data: Dict[str, dict] = {}
 
         self.level_map: Dict[str, dict] = {}
         self.item_name_to_id: Dict[str, str] = {}
@@ -58,6 +63,8 @@ class ConfigManager:
         self.realm_data = self._load_json_data(self._paths["realm"])
         self.tag_data = self._load_json_data(self._paths["tag"])
         self.recipe_data = self._load_json_data(self._paths["recipe"])
+        self.sect_shop_data = self._load_json_data(self._paths["sect_shop"])
+        self.sect_buildings_data = self._load_json_data(self._paths["sect_buildings"])
 
         self.level_map = {info["level_name"]: {"index": i, **info}
                           for i, info in enumerate(self.level_data) if "level_name" in info}

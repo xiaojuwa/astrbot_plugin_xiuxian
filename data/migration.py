@@ -5,7 +5,7 @@ from typing import Dict, Callable, Awaitable
 from astrbot.api import logger
 from ..config_manager import ConfigManager
 
-LATEST_DB_VERSION = 21 # v2.6.5 添加道具限购系统
+LATEST_DB_VERSION = 22 # v2.7.0 宗门系统增强
 
 MIGRATION_TASKS: Dict[int, Callable[[aiosqlite.Connection, ConfigManager], Awaitable[None]]] = {}
 
@@ -1045,3 +1045,78 @@ async def _upgrade_v20_to_v21(conn: aiosqlite.Connection, config_manager: Config
     logger.info("✅ 已创建 daily_item_purchase 表")
 
     logger.info("v20 -> v21 数据库迁移完成！道具限购系统已添加。")
+
+@migration(22)
+async def _upgrade_v21_to_v22(conn: aiosqlite.Connection, config_manager: ConfigManager):
+    """v2.7.0: 宗门系统增强 - 商店、建筑、任务、排行榜"""
+    logger.info("开始执行 v21 -> v22 数据库迁移（宗门系统增强）...")
+
+    # 1. 宗门建筑表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS sect_buildings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sect_id INTEGER NOT NULL,
+            building_type TEXT NOT NULL,
+            level INTEGER DEFAULT 0,
+            UNIQUE(sect_id, building_type),
+            FOREIGN KEY (sect_id) REFERENCES sects (id) ON DELETE CASCADE
+        )
+    """)
+    logger.info("✅ 已创建 sect_buildings 表")
+
+    # 2. 宗门商店每日限购表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS sect_shop_daily_limit (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            item_id TEXT NOT NULL,
+            purchase_date TEXT NOT NULL,
+            count INTEGER DEFAULT 0,
+            UNIQUE(user_id, item_id, purchase_date),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+    logger.info("✅ 已创建 sect_shop_daily_limit 表")
+
+    # 3. 宗门每日任务表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS sect_daily_tasks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            task_date TEXT NOT NULL,
+            task_id TEXT NOT NULL,
+            completed INTEGER DEFAULT 0,
+            claimed INTEGER DEFAULT 0,
+            UNIQUE(user_id, task_date, task_id),
+            FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+    logger.info("✅ 已创建 sect_daily_tasks 表")
+
+    # 4. 灵田每日收获记录表  
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS sect_farm_harvest (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sect_id INTEGER NOT NULL,
+            harvest_date TEXT NOT NULL,
+            harvested INTEGER DEFAULT 0,
+            UNIQUE(sect_id, harvest_date),
+            FOREIGN KEY (sect_id) REFERENCES sects (id) ON DELETE CASCADE
+        )
+    """)
+    logger.info("✅ 已创建 sect_farm_harvest 表")
+
+    # 5. 宗门建筑Buff激活记录表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS sect_building_buffs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sect_id INTEGER NOT NULL,
+            building_type TEXT NOT NULL,
+            activated_at REAL NOT NULL,
+            expires_at REAL NOT NULL,
+            FOREIGN KEY (sect_id) REFERENCES sects (id) ON DELETE CASCADE
+        )
+    """)
+    logger.info("✅ 已创建 sect_building_buffs 表")
+
+    logger.info("v21 -> v22 数据库迁移完成！宗门系统增强已就绪。")

@@ -970,3 +970,23 @@ class DataBase:
             ON CONFLICT(user_id, item_id, purchase_date) DO UPDATE SET count = count + ?
         """, (user_id, item_id, purchase_date, quantity, quantity))
         await self.conn.commit()
+
+    # ========== 宗门系统 v2.7.0 ==========
+    
+    async def get_sect_shop_purchase_count(self, user_id: str, item_id: str, purchase_date: str) -> int:
+        """获取宗门商品今日购买次数"""
+        async with self.conn.execute(
+            "SELECT count FROM sect_shop_daily_limit WHERE user_id = ? AND item_id = ? AND purchase_date = ?",
+            (user_id, item_id, purchase_date)
+        ) as cursor:
+            row = await cursor.fetchone()
+            return row["count"] if row else 0
+
+    async def increment_sect_shop_purchase(self, user_id: str, item_id: str, purchase_date: str, quantity: int = 1):
+        """增加宗门商品购买次数"""
+        await self.conn.execute("""
+            INSERT INTO sect_shop_daily_limit (user_id, item_id, purchase_date, count)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(user_id, item_id, purchase_date) DO UPDATE SET count = count + ?
+        """, (user_id, item_id, purchase_date, quantity, quantity))
+        await self.conn.commit()

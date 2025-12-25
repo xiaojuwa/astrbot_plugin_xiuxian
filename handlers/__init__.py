@@ -1,11 +1,12 @@
 # handlers/__init__.py
 
+from .misc_handler import MiscHandler
 from .player_handler import PlayerHandler
 from .shop_handler import ShopHandler
 from .sect_handler import SectHandler
+from .sect_shop_handler import SectShopHandler
 from .combat_handler import CombatHandler
 from .realm_handler import RealmHandler
-from .misc_handler import MiscHandler
 from .equipment_handler import EquipmentHandler
 from .ranking_handler import RankingHandler
 from .daily_task_handler import DailyTaskHandler
@@ -18,20 +19,7 @@ from .gm_handler import GMHandler
 from .redeem_handler import RedeemHandler
 
 __all__ = [
-    "PlayerHandler",
-    "ShopHandler",
-    "SectHandler",
-    "CombatHandler",
-    "RealmHandler",
-    "MiscHandler",
-    "EquipmentHandler",
-    "RankingHandler",
-    "DailyTaskHandler",
-    "AdventureHandler",
-    "TribulationHandler",
-    "BountyHandler",
-    "TradeHandler",
-    "CraftingHandler",
-    "GMHandler",
-    "RedeemHandler"
+    "MiscHandler", "PlayerHandler", "ShopHandler", "SectHandler", "SectShopHandler", "CombatHandler", "RealmHandler",
+    "EquipmentHandler", "RankingHandler", "DailyTaskHandler", "AdventureHandler", "TribulationHandler",
+    "BountyHandler", "TradeHandler", "CraftingHandler", "GMHandler", "RedeemHandler"
 ]

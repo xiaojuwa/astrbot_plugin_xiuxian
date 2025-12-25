@@ -1,0 +1,86 @@
+{
+    "library": {
+        "name": "藏经阁",
+        "description": "激活后全员获得修炼速度加成",
+        "max_level": 3,
+        "levels": {
+            "1": {
+                "gold_cost": 20000,
+                "crystal_cost": 5,
+                "buff_type": "cultivation_speed",
+                "buff_value": 15,
+                "duration_hours": 6,
+                "daily_activations": 1
+            },
+            "2": {
+                "gold_cost": 40000,
+                "crystal_cost": 10,
+                "buff_type": "cultivation_speed",
+                "buff_value": 25,
+                "duration_hours": 8,
+                "daily_activations": 2
+            },
+            "3": {
+                "gold_cost": 80000,
+                "crystal_cost": 20,
+                "buff_type": "cultivation_speed",
+                "buff_value": 35,
+                "duration_hours": 12,
+                "daily_activations": 3
+            }
+        }
+    },
+    "alchemy": {
+        "name": "炼丹房",
+        "description": "激活后全员获得炼丹成功率加成",
+        "max_level": 3,
+        "levels": {
+            "1": {
+                "gold_cost": 25000,
+                "crystal_cost": 5,
+                "buff_type": "alchemy_success",
+                "buff_value": 8,
+                "duration_hours": 6,
+                "daily_activations": 1
+            },
+            "2": {
+                "gold_cost": 50000,
+                "crystal_cost": 10,
+                "buff_type": "alchemy_success",
+                "buff_value": 12,
+                "duration_hours": 8,
+                "daily_activations": 2
+            },
+            "3": {
+                "gold_cost": 100000,
+                "crystal_cost": 20,
+                "buff_type": "alchemy_success",
+                "buff_value": 18,
+                "duration_hours": 12,
+                "daily_activations": 3
+            }
+        }
+    },
+    "farm": {
+        "name": "灵田",
+        "description": "每日产出灵石归宗门",
+        "max_level": 3,
+        "levels": {
+            "1": {
+                "gold_cost": 30000,
+                "crystal_cost": 5,
+                "production_per_member": 80
+            },
+            "2": {
+                "gold_cost": 60000,
+                "crystal_cost": 10,
+                "production_per_member": 150
+            },
+            "3": {
+                "gold_cost": 120000,
+                "crystal_cost": 20,
+                "production_per_member": 250
+            }
+        }
+    }
+}

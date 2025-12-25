@@ -1,9 +1,9 @@
 # AstrBot 文字修仙插件
 
 <p align="center">
-  <img src="https://img.shields.io/badge/版本-v2.6.6-blue" alt="Version">
+  <img src="https://img.shields.io/badge/版本-v2.7.0-blue" alt="Version">
   <img src="https://img.shields.io/badge/框架-AstrBot-green" alt="Framework">
-  <img src="https://img.shields.io/badge/数据库版本-v21-orange" alt="DB Version">
+  <img src="https://img.shields.io/badge/数据库版本-v22-orange" alt="DB Version">
   <img src="https://img.shields.io/badge/许可证-AGPL--3.0-red" alt="License">
 </p>
 
@@ -692,7 +692,35 @@ astrbot_plugin_xiuxian/
 
 ## 更新日志
 
-### v2.6.6 (最新) - GM指令修复
+### v2.7.0 (最新) - 宗门商店系统
+
+**🏪 宗门商店上线**：
+- 宗门成员可用贡献度兑换独家物品
+- 10种商品：培元丹、破境丹、战神丸、聚灵散、材料包、功法等
+- 部分物品每日限购，防止囤积
+- 需要宗门等级解锁高级物品
+
+**📊 设计亮点**：
+- 贡献度终于有用了！
+- 宗门专属物品，性价比合理
+- 聚灵散：修炼速度+30% (60分钟)
+- 破境丹：突破成功率+20%
+
+**📦 数据库更新**：
+- 数据库版本：v21 → v22
+- 新增 `sect_shop_daily_limit` 表（限购记录）
+- 预留 4 张表为未来宗门功能扩展
+
+**🎮 命令新增**：
+- `宗门商店` - 查看可兑换的物品
+- `兑换 <物品名> [数量]` - 消耗贡献度兑换
+
+**🛣️ 后续计划** (v2.7.1-v2.7.3)：
+- 宗门建筑系统
+- 宗门每日任务
+- 宗门排行榜
+
+### v2.6.6 - GM指令修复
 
 **🔧 Bug修复**:
 - **GM指令参数解析错误**：修复GM加灵石、GM加修为、GM设境界、GM加物品、GM设生命等指令无法正确接收参数的问题
