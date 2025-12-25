@@ -1,9 +1,9 @@
 # AstrBot 文字修仙插件
 
 <p align="center">
-  <img src="https://img.shields.io/badge/版本-v2.6.2-blue" alt="Version">
+  <img src="https://img.shields.io/badge/版本-v2.6.3-blue" alt="Version">
   <img src="https://img.shields.io/badge/框架-AstrBot-green" alt="Framework">
-  <img src="https://img.shields.io/badge/数据库版本-v18-orange" alt="DB Version">
+  <img src="https://img.shields.io/badge/数据库版本-v19-orange" alt="DB Version">
   <img src="https://img.shields.io/badge/许可证-AGPL--3.0-red" alt="License">
 </p>
 
@@ -464,7 +464,14 @@ astrbot_plugin_xiuxian/
 
 ## 更新日志
 
-### v2.6.2 (最新)
+### v2.6.3 (最新)
+
+**Bug修复：**
+- **数据库迁移修复 v2**：修复 v2.6.2 中数据库版本号与实际schema不同步导致迁移被跳过
+- **数据库版本**：v18 → v19，增加防御性检查，确保 `realm_pending_choice` 字段存在
+- 现在即使版本号已是v18，也会检查并添加缺失的字段
+
+### v2.6.2
 
 **Bug修复：**
 - **数据库迁移修复**：修复 v2.6.1 中缺少数据库迁移导致玩家无法进入秘境（`realm_pending_choice` 字段缺失）
