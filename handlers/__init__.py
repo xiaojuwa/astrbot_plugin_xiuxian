@@ -5,6 +5,7 @@ from .player_handler import PlayerHandler
 from .shop_handler import ShopHandler
 from .sect_handler import SectHandler
 from .sect_shop_handler import SectShopHandler
+from .sect_building_handler import SectBuildingHandler
 from .combat_handler import CombatHandler
 from .realm_handler import RealmHandler
 from .equipment_handler import EquipmentHandler
@@ -19,7 +20,8 @@ from .gm_handler import GMHandler
 from .redeem_handler import RedeemHandler
 
 __all__ = [
-    "MiscHandler", "PlayerHandler", "ShopHandler", "SectHandler", "SectShopHandler", "CombatHandler", "RealmHandler",
-    "EquipmentHandler", "RankingHandler", "DailyTaskHandler", "AdventureHandler", "TribulationHandler",
-    "BountyHandler", "TradeHandler", "CraftingHandler", "GMHandler", "RedeemHandler"
+    "MiscHandler", "PlayerHandler", "ShopHandler", "SectHandler", "SectShopHandler", "SectBuildingHandler",
+    "CombatHandler", "RealmHandler", "EquipmentHandler", "RankingHandler", "DailyTaskHandler", 
+    "AdventureHandler", "TribulationHandler", "BountyHandler", "TradeHandler", "CraftingHandler", 
+    "GMHandler", "RedeemHandler"
 ]

@@ -990,3 +990,79 @@ class DataBase:
             ON CONFLICT(user_id, item_id, purchase_date) DO UPDATE SET count = count + ?
         """, (user_id, item_id, purchase_date, quantity, quantity))
         await self.conn.commit()
+
+    # ========== 宗门建筑系统 ==========
+
+    async def get_sect_building(self, sect_id: int, building_id: str) -> Optional[dict]:
+        """获取宗门建筑信息"""
+        async with self.conn.execute(
+            "SELECT * FROM sect_buildings WHERE sect_id = ? AND building_id = ?",
+            (sect_id, building_id)
+        ) as cursor:
+            row = await cursor.fetchone()
+            return dict(row) if row else None
+
+    async def get_all_sect_buildings(self, sect_id: int) -> List[dict]:
+        """获取宗门所有建筑"""
+        async with self.conn.execute(
+            "SELECT * FROM sect_buildings WHERE sect_id = ?",
+            (sect_id,)
+        ) as cursor:
+            return [dict(row) for row in await cursor.fetchall()]
+
+    async def create_sect_building(self, sect_id: int, building_id: str):
+        """创建宗门建筑"""
+        await self.conn.execute(
+            "INSERT INTO sect_buildings (sect_id, building_id, level, created_at) VALUES (?, ?, 1, datetime('now'))",
+            (sect_id, building_id)
+        )
+        await self.conn.commit()
+
+    async def upgrade_sect_building(self, sect_id: int, building_id: str, new_level: int):
+        """升级宗门建筑"""
+        await self.conn.execute(
+            "UPDATE sect_buildings SET level = ? WHERE sect_id = ? AND building_id = ?",
+            (new_level, sect_id, building_id)
+        )
+        await self.conn.commit()
+
+    async def get_sect_building_buff_count(self, sect_id: int, building_id: str, date_str: str) -> int:
+        """获取建筑今日激活次数"""
+        async with self.conn.execute(
+            "SELECT COUNT(*) as cnt FROM sect_building_buffs WHERE sect_id = ? AND building_id = ? AND DATE(activated_at) = ?",
+            (sect_id, building_id, date_str)
+        ) as cursor:
+            row = await cursor.fetchone()
+            return row["cnt"] if row else 0
+
+    async def add_sect_building_buff(self, sect_id: int, building_id: str, expires_at: str):
+        """记录建筑Buff激活"""
+        await self.conn.execute(
+            "INSERT INTO sect_building_buffs (sect_id, building_id, activated_at, expires_at) VALUES (?, ?, datetime('now'), ?)",
+            (sect_id, building_id, expires_at)
+        )
+        await self.conn.commit()
+
+    async def get_active_sect_building_buffs(self, sect_id: int) -> List[dict]:
+        """获取当前有效的宗门建筑Buff"""
+        async with self.conn.execute(
+            "SELECT * FROM sect_building_buffs WHERE sect_id = ? AND expires_at > datetime('now')",
+            (sect_id,)
+        ) as cursor:
+            return [dict(row) for row in await cursor.fetchall()]
+
+    async def use_sect_funds(self, sect_id: int, amount: int) -> bool:
+        """消耗宗门资金"""
+        async with self.conn.execute(
+            "SELECT funds FROM sects WHERE id = ?",
+            (sect_id,)
+        ) as cursor:
+            row = await cursor.fetchone()
+            if not row or row["funds"] < amount:
+                return False
+        await self.conn.execute(
+            "UPDATE sects SET funds = funds - ? WHERE id = ?",
+            (amount, sect_id)
+        )
+        await self.conn.commit()
+        return True

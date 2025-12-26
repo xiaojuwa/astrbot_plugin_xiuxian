@@ -140,3 +140,28 @@ class ConfigManager:
     def get_quality_rates(self) -> Dict[str, dict]:
         """获取品质概率配置"""
         return self.recipe_data.get("quality_rates", {})
+
+    def get_materials_by_rank(self, rank: str) -> List[dict]:
+        """根据品阶获取材料列表"""
+        materials = []
+        for item_id, item in self.item_data.items():
+            if item.item_type == "材料" and item.rank == rank:
+                materials.append({"id": item_id, "name": item.name, "rank": item.rank})
+        return materials
+
+    def get_items_by_rank_range(self, min_rank: str, max_rank: str) -> List[dict]:
+        """根据品阶范围获取物品列表"""
+        rank_order = ["普通", "良品", "珍品", "极品", "圣品", "传说", "神话"]
+        try:
+            min_idx = rank_order.index(min_rank)
+            max_idx = rank_order.index(max_rank)
+        except ValueError:
+            return []
+        
+        items = []
+        for item_id, item in self.item_data.items():
+            if item.rank and item.rank in rank_order:
+                rank_idx = rank_order.index(item.rank)
+                if min_idx <= rank_idx <= max_idx:
+                    items.append({"id": item_id, "name": item.name, "rank": item.rank, "type": item.item_type})
+        return items

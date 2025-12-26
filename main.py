@@ -5,9 +5,10 @@ from astrbot.api.event import AstrMessageEvent, filter
 from .data import DataBase, MigrationManager
 from .config_manager import ConfigManager
 from .handlers import (
-    MiscHandler, PlayerHandler, ShopHandler, SectHandler, SectShopHandler, CombatHandler, RealmHandler,
-    EquipmentHandler, RankingHandler, DailyTaskHandler, AdventureHandler, TribulationHandler,
-    BountyHandler, TradeHandler, CraftingHandler, GMHandler, RedeemHandler
+    MiscHandler, PlayerHandler, ShopHandler, SectHandler, SectShopHandler, SectBuildingHandler,
+    CombatHandler, RealmHandler, EquipmentHandler, RankingHandler, DailyTaskHandler, 
+    AdventureHandler, TribulationHandler, BountyHandler, TradeHandler, CraftingHandler, 
+    GMHandler, RedeemHandler
 )
 
 # 指令定义
@@ -30,6 +31,10 @@ CMD_LEAVE_SECT = "离开宗门"
 CMD_MY_SECT = "我的宗门"
 CMD_SECT_SHOP = "宗门商店"
 CMD_SECT_EXCHANGE = "兑换"
+CMD_SECT_BUILDINGS = "宗门建筑"
+CMD_BUILD = "建造建筑"
+CMD_UPGRADE_BUILDING = "升级建筑"
+CMD_ACTIVATE_BUILDING = "激活建筑"
 CMD_SPAR = "切磋"
 CMD_BOSS_LIST = "查看世界boss"
 CMD_FIGHT_BOSS = "讨伐boss"
@@ -107,7 +112,7 @@ CMD_REDEEM = "橘的恩赐"
     "astrbot_plugin_xiuxian",
     "xiaojuwa",
     "基于astrbot框架的文字修仙游戏",
-    "v2.7.0", # 版本号 - 宗门商店系统
+    "v2.7.1", # 版本号 - 宗门建筑系统
     "https://github.com/xiaojuwa/astrbot_plugin_xiuxian"
 )
 class XiuXianPlugin(Star):
@@ -125,7 +130,8 @@ class XiuXianPlugin(Star):
         self.player_handler = PlayerHandler(self.db, self.config, self.config_manager)
         self.shop_handler = ShopHandler(self.db, self.config_manager, self.config) # 传入config
         self.sect_handler = SectHandler(self.db, self.config, self.config_manager)
-        self.sect_shop_handler = SectShopHandler(self.db, self.config, self.config_manager) # Instantiated SectShopHandler
+        self.sect_shop_handler = SectShopHandler(self.db, self.config, self.config_manager)
+        self.sect_building_handler = SectBuildingHandler(self.db, self.config, self.config_manager)
         self.combat_handler = CombatHandler(self.db, self.config, self.config_manager)
         self.realm_handler = RealmHandler(self.db, self.config, self.config_manager)
         self.equipment_handler = EquipmentHandler(self.db, self.config_manager)
@@ -323,6 +329,35 @@ class XiuXianPlugin(Star):
             await self._send_access_denied_message(event)
             return
         async for r in self.sect_shop_handler.handle_sect_exchange(event, item_name, quantity): yield r
+
+    # --- 宗门建筑指令 ---
+    @filter.command(CMD_SECT_BUILDINGS, "查看宗门建筑")
+    async def handle_sect_buildings(self, event: AstrMessageEvent):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.sect_building_handler.handle_sect_buildings(event): yield r
+
+    @filter.command(CMD_BUILD, "建造宗门建筑")
+    async def handle_build(self, event: AstrMessageEvent, building_name: str):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.sect_building_handler.handle_build(event, building_name): yield r
+
+    @filter.command(CMD_UPGRADE_BUILDING, "升级宗门建筑")
+    async def handle_upgrade_building(self, event: AstrMessageEvent, building_name: str):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.sect_building_handler.handle_upgrade_building(event, building_name): yield r
+
+    @filter.command(CMD_ACTIVATE_BUILDING, "激活宗门建筑Buff")
+    async def handle_activate_building(self, event: AstrMessageEvent, building_name: str):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.sect_building_handler.handle_activate_building(event, building_name): yield r
         
     @filter.command(CMD_SPAR, "与其他玩家切磋")
     async def handle_spar(self, event: AstrMessageEvent):
