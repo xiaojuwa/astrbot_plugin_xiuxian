@@ -309,11 +309,142 @@ class GMHandler:
             yield event.plain_result("生命值不能为负数")
             return
         
-        player.hp = min(hp_int, player.max_hp)
+        # GM设置生命值时，同时设置max_hp和hp
+        player.max_hp = hp_int
+        player.hp = hp_int
         await self.db.update_player(player)
         
-        logger.info(f"[GM] 管理员 {event.get_sender_id()} 将玩家 {target_id} 生命值设为 {player.hp}")
+        logger.info(f"[GM] 管理员 {event.get_sender_id()} 将玩家 {target_id} 生命值设为 {player.hp}/{player.max_hp}")
         yield event.plain_result(f"✅ 已将玩家生命值设为：{player.hp}/{player.max_hp}")
+
+    async def handle_gm_set_attack(self, event: AstrMessageEvent, attack: str):
+        """GM设置攻击力
+        支持两种格式：
+        1. GM设攻击 @玩家 1000
+        2. GM设攻击 QQ号 1000
+        """
+        parts = attack.split() if attack else []
+        qq_param = ""
+        attack_str = ""
+
+        if len(parts) >= 2:
+            qq_param = parts[0]
+            attack_str = parts[1]
+        elif len(parts) == 1:
+            attack_str = parts[0]
+
+        target_id = self._parse_target_user(event, qq_param)
+        if not target_id:
+            yield event.plain_result("请@一个玩家或输入QQ号，例如：\nGM设攻击 @玩家 1000\nGM设攻击 123456789 1000")
+            return
+
+        try:
+            attack_int = int(attack_str)
+        except (ValueError, TypeError):
+            yield event.plain_result("请输入有效的攻击力，例如：\nGM设攻击 @玩家 1000\nGM设攻击 123456789 1000")
+            return
+        
+        player = await self.db.get_player_by_id(target_id)
+        if not player:
+            yield event.plain_result("目标玩家尚未踏入仙途。")
+            return
+        
+        if attack_int < 0:
+            yield event.plain_result("攻击力不能为负数")
+            return
+        
+        player.attack = attack_int
+        await self.db.update_player(player)
+        
+        logger.info(f"[GM] 管理员 {event.get_sender_id()} 将玩家 {target_id} 攻击力设为 {player.attack}")
+        yield event.plain_result(f"✅ 已将玩家攻击力设为：{player.attack}")
+
+    async def handle_gm_set_defense(self, event: AstrMessageEvent, defense: str):
+        """GM设置防御力
+        支持两种格式：
+        1. GM设防御 @玩家 1000
+        2. GM设防御 QQ号 1000
+        """
+        parts = defense.split() if defense else []
+        qq_param = ""
+        defense_str = ""
+
+        if len(parts) >= 2:
+            qq_param = parts[0]
+            defense_str = parts[1]
+        elif len(parts) == 1:
+            defense_str = parts[0]
+
+        target_id = self._parse_target_user(event, qq_param)
+        if not target_id:
+            yield event.plain_result("请@一个玩家或输入QQ号，例如：\nGM设防御 @玩家 1000\nGM设防御 123456789 1000")
+            return
+
+        try:
+            defense_int = int(defense_str)
+        except (ValueError, TypeError):
+            yield event.plain_result("请输入有效的防御力，例如：\nGM设防御 @玩家 1000\nGM设防御 123456789 1000")
+            return
+        
+        player = await self.db.get_player_by_id(target_id)
+        if not player:
+            yield event.plain_result("目标玩家尚未踏入仙途。")
+            return
+        
+        if defense_int < 0:
+            yield event.plain_result("防御力不能为负数")
+            return
+        
+        player.defense = defense_int
+        await self.db.update_player(player)
+        
+        logger.info(f"[GM] 管理员 {event.get_sender_id()} 将玩家 {target_id} 防御力设为 {player.defense}")
+        yield event.plain_result(f"✅ 已将玩家防御力设为：{player.defense}")
+
+    async def handle_gm_set_max_hp(self, event: AstrMessageEvent, max_hp: str):
+        """GM设置最大生命值（不改变当前生命）
+        支持两种格式：
+        1. GM设最大生命 @玩家 1000
+        2. GM设最大生命 QQ号 1000
+        """
+        parts = max_hp.split() if max_hp else []
+        qq_param = ""
+        hp_str = ""
+
+        if len(parts) >= 2:
+            qq_param = parts[0]
+            hp_str = parts[1]
+        elif len(parts) == 1:
+            hp_str = parts[0]
+
+        target_id = self._parse_target_user(event, qq_param)
+        if not target_id:
+            yield event.plain_result("请@一个玩家或输入QQ号，例如：\nGM设最大生命 @玩家 1000\nGM设最大生命 123456789 1000")
+            return
+
+        try:
+            hp_int = int(hp_str)
+        except (ValueError, TypeError):
+            yield event.plain_result("请输入有效的最大生命值，例如：\nGM设最大生命 @玩家 1000\nGM设最大生命 123456789 1000")
+            return
+        
+        player = await self.db.get_player_by_id(target_id)
+        if not player:
+            yield event.plain_result("目标玩家尚未踏入仙途。")
+            return
+        
+        if hp_int < 1:
+            yield event.plain_result("最大生命值至少为1")
+            return
+        
+        player.max_hp = hp_int
+        # 当前生命不能超过最大生命
+        if player.hp > player.max_hp:
+            player.hp = player.max_hp
+        await self.db.update_player(player)
+        
+        logger.info(f"[GM] 管理员 {event.get_sender_id()} 将玩家 {target_id} 最大生命值设为 {player.max_hp}")
+        yield event.plain_result(f"✅ 已将玩家最大生命值设为：{player.max_hp}（当前生命：{player.hp}）")
 
     async def handle_gm_reset_player(self, event: AstrMessageEvent, qq_param: str = ""):
         """GM重置玩家

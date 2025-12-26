@@ -96,6 +96,9 @@ CMD_GM_ADD_EXP = "GM加修为"
 CMD_GM_SET_LEVEL = "GM设境界"
 CMD_GM_ADD_ITEM = "GM加物品"
 CMD_GM_SET_HP = "GM设生命"
+CMD_GM_SET_ATTACK = "GM设攻击"
+CMD_GM_SET_DEFENSE = "GM设防御"
+CMD_GM_SET_MAX_HP = "GM设最大生命"
 CMD_GM_RESET_PLAYER = "GM重置玩家"
 CMD_GM_VIEW_PLAYER = "GM查看玩家"
 CMD_GM_LIST_LEVELS = "GM境界列表"
@@ -696,6 +699,36 @@ class XiuXianPlugin(Star):
         msg = event.message_str.strip()
         params = msg.replace(CMD_GM_SET_HP, "", 1).strip()
         async for r in self.gm_handler.handle_gm_set_hp(event, params): yield r
+
+    @filter.permission_type(filter.PermissionType.ADMIN)
+    @filter.command(CMD_GM_SET_ATTACK, "GM设置攻击力")
+    async def handle_gm_set_attack(self, event: AstrMessageEvent):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        msg = event.message_str.strip()
+        params = msg.replace(CMD_GM_SET_ATTACK, "", 1).strip()
+        async for r in self.gm_handler.handle_gm_set_attack(event, params): yield r
+
+    @filter.permission_type(filter.PermissionType.ADMIN)
+    @filter.command(CMD_GM_SET_DEFENSE, "GM设置防御力")
+    async def handle_gm_set_defense(self, event: AstrMessageEvent):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        msg = event.message_str.strip()
+        params = msg.replace(CMD_GM_SET_DEFENSE, "", 1).strip()
+        async for r in self.gm_handler.handle_gm_set_defense(event, params): yield r
+
+    @filter.permission_type(filter.PermissionType.ADMIN)
+    @filter.command(CMD_GM_SET_MAX_HP, "GM设置最大生命值")
+    async def handle_gm_set_max_hp(self, event: AstrMessageEvent):
+        if not self._check_access(event):
+            await self._send_access_denied_message(event)
+            return
+        msg = event.message_str.strip()
+        params = msg.replace(CMD_GM_SET_MAX_HP, "", 1).strip()
+        async for r in self.gm_handler.handle_gm_set_max_hp(event, params): yield r
 
     @filter.permission_type(filter.PermissionType.ADMIN)
     @filter.command(CMD_GM_RESET_PLAYER, "GM重置玩家")
