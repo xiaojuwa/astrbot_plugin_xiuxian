@@ -328,8 +328,8 @@ class BattleManager:
                     await self.db.add_items_to_inventory_in_transaction(player_obj.user_id, item_rewards)
                     item_names = []
                     for item_id, qty in item_rewards.items():
-                        item_info = self.config_manager.item_data.get(item_id, {})
-                        item_name = item_info.get("name", f"物品{item_id}")
+                        item_info = self.config_manager.item_data.get(item_id)
+                        item_name = item_info.name if item_info else f"物品{item_id}"
                         item_names.append(f"{item_name}x{qty}")
                     if item_names:
                         reward_report.append(f"  🎁 首功奖励: {', '.join(item_names)}")
