@@ -191,11 +191,14 @@ class GMHandler:
         old_level = player.get_level(self.config_manager)
         player.level_index = level_index_int
         
-        level_config = self.config_manager.level_data[level_index_int]
-        player.max_hp = level_config.get("base_hp", 100)
-        player.hp = player.max_hp
-        player.attack = level_config.get("base_attack", 10)
-        player.defense = level_config.get("base_defense", 5)
+        # 使用和突破相同的属性计算公式
+        base_hp = 100 + level_index_int * 50
+        base_attack = 10 + level_index_int * 8
+        base_defense = 5 + level_index_int * 4
+        player.max_hp = base_hp
+        player.hp = base_hp
+        player.attack = base_attack
+        player.defense = base_defense
         
         await self.db.update_player(player)
         
