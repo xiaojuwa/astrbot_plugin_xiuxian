@@ -257,6 +257,7 @@ class ActiveWorldBoss:
     max_hp: int
     spawned_at: float
     level_index: int
+    defeated_at: Optional[float] = None
 
 @dataclass
 class Monster:
