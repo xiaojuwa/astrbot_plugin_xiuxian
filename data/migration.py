@@ -5,7 +5,7 @@ from typing import Dict, Callable, Awaitable
 from astrbot.api import logger
 from ..config_manager import ConfigManager
 
-LATEST_DB_VERSION = 22 # v2.7.0 宗门系统增强
+LATEST_DB_VERSION = 23 # v2.7.1 世界Boss系统增强
 
 MIGRATION_TASKS: Dict[int, Callable[[aiosqlite.Connection, ConfigManager], Awaitable[None]]] = {}
 
@@ -676,7 +676,8 @@ async def _create_all_tables_v11(conn: aiosqlite.Connection):
             current_hp INTEGER NOT NULL,
             max_hp INTEGER NOT NULL,
             spawned_at REAL NOT NULL,
-            level_index INTEGER NOT NULL
+            level_index INTEGER NOT NULL,
+            defeated_at REAL DEFAULT NULL
         )
     """)
     await conn.execute("""
@@ -685,8 +686,18 @@ async def _create_all_tables_v11(conn: aiosqlite.Connection):
             user_id TEXT NOT NULL,
             user_name TEXT NOT NULL,
             total_damage INTEGER NOT NULL DEFAULT 0,
+            last_attack_at REAL DEFAULT NULL,
             PRIMARY KEY (boss_id, user_id),
             FOREIGN KEY (user_id) REFERENCES players (user_id) ON DELETE CASCADE
+        )
+    """)
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS world_boss_kill_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            boss_id TEXT NOT NULL,
+            boss_name TEXT NOT NULL,
+            defeated_at REAL NOT NULL,
+            top_contributors TEXT NOT NULL
         )
     """)
     # 每日任务进度表
@@ -1120,3 +1131,36 @@ async def _upgrade_v21_to_v22(conn: aiosqlite.Connection, config_manager: Config
     logger.info("✅ 已创建 sect_building_buffs 表")
 
     logger.info("v21 -> v22 数据库迁移完成！宗门系统增强已就绪。")
+
+@migration(23)
+async def _upgrade_v22_to_v23(conn: aiosqlite.Connection, config_manager: ConfigManager):
+    """v22 -> v23: 世界Boss系统增强"""
+    logger.info("开始 v22 -> v23 数据库迁移：世界Boss系统增强...")
+
+    # 1. 为 active_world_bosses 表添加 defeated_at 字段
+    try:
+        await conn.execute("ALTER TABLE active_world_bosses ADD COLUMN defeated_at REAL DEFAULT NULL")
+        logger.info("✅ 已为 active_world_bosses 添加 defeated_at 字段")
+    except aiosqlite.OperationalError:
+        logger.info("⏭️ active_world_bosses.defeated_at 字段已存在，跳过")
+
+    # 2. 为 world_boss_participants 表添加 last_attack_at 字段
+    try:
+        await conn.execute("ALTER TABLE world_boss_participants ADD COLUMN last_attack_at REAL DEFAULT NULL")
+        logger.info("✅ 已为 world_boss_participants 添加 last_attack_at 字段")
+    except aiosqlite.OperationalError:
+        logger.info("⏭️ world_boss_participants.last_attack_at 字段已存在，跳过")
+
+    # 3. 创建世界Boss击杀记录表
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS world_boss_kill_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            boss_id TEXT NOT NULL,
+            boss_name TEXT NOT NULL,
+            defeated_at REAL NOT NULL,
+            top_contributors TEXT NOT NULL
+        )
+    """)
+    logger.info("✅ 已创建 world_boss_kill_logs 表")
+
+    logger.info("v22 -> v23 数据库迁移完成！世界Boss系统增强已就绪。")

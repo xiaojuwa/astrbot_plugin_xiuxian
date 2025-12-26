@@ -75,6 +75,36 @@
         "default": 5,
         "hint": "生成世界Boss时，参考服务器战力排名前N的玩家的平均等级。"
       },
+      "WORLD_BOSS_PLAYER_COOLDOWN_MINUTES": {
+        "description": "玩家讨伐Boss冷却时间",
+        "type": "int",
+        "default": 120,
+        "hint": "每位玩家对同一Boss的攻击冷却时间（分钟）。"
+      },
+      "WORLD_BOSS_DIFFICULTY_MULTIPLIER": {
+        "description": "世界Boss难度系数",
+        "type": "float",
+        "default": 3.0,
+        "hint": "Boss属性（血量、攻击、防御）的额外倍率，数值越高Boss越难。"
+      },
+      "WORLD_BOSS_RANK_BONUS_GOLD": {
+        "description": "Boss伤害排名前三额外灵石奖励",
+        "type": "list",
+        "default": [2000, 1000, 500],
+        "hint": "伤害排名第1/2/3名的额外灵石奖励。"
+      },
+      "WORLD_BOSS_RANK_BONUS_EXP": {
+        "description": "Boss伤害排名前三额外经验奖励",
+        "type": "list",
+        "default": [5000, 2500, 1000],
+        "hint": "伤害排名第1/2/3名的额外经验奖励。"
+      },
+      "WORLD_BOSS_BROADCAST_GROUP": {
+        "description": "Boss击杀战报推送群号",
+        "type": "string",
+        "default": "",
+        "hint": "Boss被击杀时，自动推送战报到指定群。留空则不推送。"
+      },
       "SHOP_DAILY_ITEM_COUNT": {
         "description": "每日商店商品数量",
         "type": "int",

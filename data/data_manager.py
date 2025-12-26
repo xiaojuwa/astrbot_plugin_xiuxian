@@ -1,5 +1,7 @@
 # data/data_manager.py
 
+import time
+import json
 import aiosqlite
 from pathlib import Path
 from typing import Optional, List, Dict, Any, Tuple
@@ -56,11 +58,20 @@ class DataBase:
         await self.conn.commit()
 
     async def record_boss_damage(self, boss_id: str, user_id: str, user_name: str, damage: int):
+        now = time.time()
         await self.conn.execute("""
-            INSERT INTO world_boss_participants (boss_id, user_id, user_name, total_damage) VALUES (?, ?, ?, ?)
-            ON CONFLICT(boss_id, user_id) DO UPDATE SET total_damage = total_damage + excluded.total_damage;
-        """, (boss_id, user_id, user_name, damage))
+            INSERT INTO world_boss_participants (boss_id, user_id, user_name, total_damage, last_attack_at) VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(boss_id, user_id) DO UPDATE SET total_damage = total_damage + excluded.total_damage, last_attack_at = excluded.last_attack_at;
+        """, (boss_id, user_id, user_name, damage, now))
         await self.conn.commit()
+
+    async def get_player_last_boss_attack(self, boss_id: str, user_id: str) -> Optional[float]:
+        async with self.conn.execute(
+            "SELECT last_attack_at FROM world_boss_participants WHERE boss_id = ? AND user_id = ?",
+            (boss_id, user_id)
+        ) as cursor:
+            row = await cursor.fetchone()
+            return row[0] if row else None
 
     async def get_boss_participants(self, boss_id: str) -> List[Dict[str, Any]]:
         sql = "SELECT user_id, user_name, total_damage FROM world_boss_participants WHERE boss_id = ? ORDER BY total_damage DESC"
@@ -78,6 +89,36 @@ class DataBase:
         except aiosqlite.Error as e:
             await self.conn.rollback()
             logger.error(f"清理Boss {boss_id} 数据失败: {e}")
+
+    async def log_boss_kill(self, boss_id: str, boss_name: str, top_contributors: List[Dict[str, Any]]):
+        now = time.time()
+        contributors_json = json.dumps(top_contributors, ensure_ascii=False)
+        await self.conn.execute(
+            "INSERT INTO world_boss_kill_logs (boss_id, boss_name, defeated_at, top_contributors) VALUES (?, ?, ?, ?)",
+            (boss_id, boss_name, now, contributors_json)
+        )
+        await self.conn.commit()
+
+    async def get_boss_kill_logs(self, limit: int = 10) -> List[Dict[str, Any]]:
+        async with self.conn.execute(
+            "SELECT * FROM world_boss_kill_logs ORDER BY defeated_at DESC LIMIT ?", (limit,)
+        ) as cursor:
+            rows = await cursor.fetchall()
+            logs = []
+            for row in rows:
+                log = dict(row)
+                log['top_contributors'] = json.loads(log['top_contributors'])
+                logs.append(log)
+            return logs
+
+    async def get_last_boss_defeat_time(self, boss_id: str) -> Optional[float]:
+        """获取指定Boss最近一次被击杀的时间戳"""
+        async with self.conn.execute(
+            "SELECT defeated_at FROM world_boss_kill_logs WHERE boss_id = ? ORDER BY defeated_at DESC LIMIT 1",
+            (boss_id,)
+        ) as cursor:
+            row = await cursor.fetchone()
+            return row[0] if row else None
 
     async def get_top_players(self, limit: int) -> List[Player]:
         async with self.conn.execute(

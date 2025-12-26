@@ -1,5 +1,6 @@
 # handlers/combat_handler.py
 import time
+import datetime
 from astrbot.api.event import AstrMessageEvent
 from astrbot.api import AstrBotConfig
 from astrbot.core.message.components import At
@@ -12,6 +13,7 @@ from .utils import player_required
 CMD_SPAR = "切磋"
 CMD_FIGHT_BOSS = "讨伐boss"
 CMD_DUEL = "奇斗"
+CMD_BOSS_LOGS = "boss战报"
 
 # PVP冷却时间（秒）
 PVP_COOLDOWN_SECONDS = 300  # 5分钟
@@ -27,10 +29,36 @@ class CombatHandler:
         self.config_manager = config_manager
         self.battle_manager = BattleManager(db, config, config_manager)
         self.daily_task_handler = None  # 延迟注入
+        self._context = None  # AstrBot context for broadcasting
     
     def set_daily_task_handler(self, handler):
         """注入每日任务处理器"""
         self.daily_task_handler = handler
+
+    def set_context(self, context):
+        """注入AstrBot context以支持主动消息推送"""
+        self._context = context
+        broadcast_group = self.config.get("VALUES", {}).get("WORLD_BOSS_BROADCAST_GROUP", "")
+        if broadcast_group and context:
+            async def broadcast_callback(message: str):
+                await self._broadcast_boss_kill(message)
+            self.battle_manager.set_broadcast_callback(broadcast_callback)
+
+    async def _broadcast_boss_kill(self, message: str):
+        """向配置的群发送Boss击杀广播"""
+        if not self._context:
+            return
+        broadcast_group = self.config.get("VALUES", {}).get("WORLD_BOSS_BROADCAST_GROUP", "")
+        if not broadcast_group:
+            return
+        try:
+            from astrbot.api.event import MessageChain
+            unified_msg_origin = f"aiocqhttp:group:{broadcast_group}"
+            chain = MessageChain().message(message)
+            await self._context.send_message(unified_msg_origin, chain)
+        except Exception as e:
+            from astrbot.api import logger
+            logger.error(f"Boss击杀广播发送失败: {e}")
 
     def _get_mentioned_user(self, event: AstrMessageEvent):
         """从消息中获取被@的用户ID和名字"""
@@ -269,3 +297,23 @@ class CombatHandler:
                 result_msg += "\n🎯 每日任务「斩妖除魔」已完成！"
         
         yield event.plain_result(result_msg)
+
+    async def handle_boss_logs(self, event: AstrMessageEvent):
+        logs = await self.db.get_boss_kill_logs(10)
+        
+        if not logs:
+            yield event.plain_result("暂无Boss击杀记录。")
+            return
+        
+        report = ["--- 近期Boss击杀战报 ---"]
+        for log in logs:
+            defeat_time = datetime.datetime.fromtimestamp(log['defeated_at'])
+            time_str = defeat_time.strftime("%m-%d %H:%M")
+            contributors = log['top_contributors']
+            top_names = [c['user_name'] for c in contributors[:3]]
+            mvp_text = "、".join(top_names) if top_names else "无"
+            report.append(f"\n📜 【{log['boss_name']}】")
+            report.append(f"   击杀时间: {time_str}")
+            report.append(f"   功勋榜: {mvp_text}")
+        
+        yield event.plain_result("\n".join(report))

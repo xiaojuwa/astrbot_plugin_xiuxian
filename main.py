@@ -38,6 +38,7 @@ CMD_ACTIVATE_BUILDING = "激活建筑"
 CMD_SPAR = "切磋"
 CMD_BOSS_LIST = "查看世界boss"
 CMD_FIGHT_BOSS = "讨伐boss"
+CMD_BOSS_LOGS = "boss战报"
 CMD_ENTER_REALM = "探索秘境"
 CMD_REALM_ADVANCE = "前进"
 CMD_LEAVE_REALM = "离开秘境"
@@ -112,7 +113,7 @@ CMD_REDEEM = "橘的恩赐"
     "astrbot_plugin_xiuxian",
     "xiaojuwa",
     "基于astrbot框架的文字修仙游戏",
-    "v2.7.1", # 版本号 - 宗门建筑系统
+    "v2.8.0", # 版本号 - 世界Boss系统增强
     "https://github.com/xiaojuwa/astrbot_plugin_xiuxian"
 )
 class XiuXianPlugin(Star):
@@ -148,6 +149,7 @@ class XiuXianPlugin(Star):
         # 注入每日任务处理器到各个处理器
         self.player_handler.set_daily_task_handler(self.daily_task_handler)
         self.combat_handler.set_daily_task_handler(self.daily_task_handler)
+        self.combat_handler.set_context(context)  # 注入context以支持Boss击杀广播
         self.realm_handler.set_daily_task_handler(self.daily_task_handler)
         self.adventure_handler.set_daily_task_handler(self.daily_task_handler)
         self.bounty_handler.set_daily_task_handler(self.daily_task_handler)
@@ -379,6 +381,13 @@ class XiuXianPlugin(Star):
             await self._send_access_denied_message(event)
             return
         async for r in self.combat_handler.handle_fight_boss(event, boss_id): yield r
+        
+    @filter.command(CMD_BOSS_LOGS, "查看近期Boss击杀战报")
+    async def handle_boss_logs(self, event: AstrMessageEvent):
+        if not self._check_access(event): 
+            await self._send_access_denied_message(event)
+            return
+        async for r in self.combat_handler.handle_boss_logs(event): yield r
         
     @filter.command(CMD_ENTER_REALM, "根据当前境界，探索一个随机秘境")
     async def handle_enter_realm(self, event: AstrMessageEvent):

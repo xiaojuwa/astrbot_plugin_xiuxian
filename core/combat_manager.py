@@ -81,17 +81,17 @@ class MonsterGenerator:
         return instance
 
     @classmethod
-    def create_boss(cls, template_id: str, player_level_index: int, config_manager: ConfigManager, scaling_factor: float = 1.0) -> Optional[Boss]:
+    def create_boss(cls, template_id: str, player_level_index: int, config_manager: ConfigManager, difficulty_multiplier: float = 1.0) -> Optional[Boss]:
         template = config_manager.boss_data.get(template_id)
         if not template:
             logger.warning(f"尝试创建Boss失败：找不到模板ID {template_id}")
             return None
 
-        base_hp = 100 * player_level_index + 500
-        base_attack = 10 * player_level_index + 40
-        base_defense = 5 * player_level_index + 20
-        base_gold = 50 * player_level_index + 1000
-        base_exp = 100 * player_level_index + 2000
+        base_hp = 200 * player_level_index + 1000
+        base_attack = 15 * player_level_index + 60
+        base_defense = 8 * player_level_index + 30
+        base_gold = 80 * player_level_index + 1500
+        base_exp = 150 * player_level_index + 3000
 
         final_name = template["name"]
         final_hp = base_hp
@@ -113,10 +113,9 @@ class MonsterGenerator:
             if "add_to_loot" in tag_effect:
                 combined_loot_table.extend(tag_effect["add_to_loot"])
         
-        # 应用强度系数
-        final_hp *= scaling_factor
-        final_attack *= scaling_factor
-        final_defense *= scaling_factor
+        final_hp *= difficulty_multiplier
+        final_attack *= difficulty_multiplier
+        final_defense *= difficulty_multiplier
 
         final_hp = int(final_hp)
         instance = Boss(
@@ -142,40 +141,74 @@ class BattleManager:
         self.db = db
         self.config = config
         self.config_manager = config_manager
+        self._broadcast_callback = None
+
+    def set_broadcast_callback(self, callback):
+        """设置Boss击杀广播回调函数"""
+        self._broadcast_callback = callback
 
     async def ensure_bosses_are_spawned(self) -> List[Tuple[ActiveWorldBoss, Boss]]:
         active_boss_instances = await self.db.get_active_bosses()
         active_boss_map = {b.boss_id: b for b in active_boss_instances}
         all_boss_templates = self.config_manager.boss_data
+        now = time.time()
 
-        top_players = await self.db.get_top_players(self.config["VALUES"]["WORLD_BOSS_TOP_PLAYERS_AVG"])
+        top_players = await self.db.get_top_players(self.config["VALUES"].get("WORLD_BOSS_TOP_PLAYERS_AVG", 5))
+        difficulty_multiplier = self.config["VALUES"].get("WORLD_BOSS_DIFFICULTY_MULTIPLIER", 3.0)
 
         for boss_id, template in all_boss_templates.items():
-            if boss_id not in active_boss_map:
-                logger.info(f"世界Boss {template['name']} (ID: {boss_id}) 当前未激活，开始生成...")
-
-                avg_level_index = int(sum(p.level_index for p in top_players) / len(top_players)) if top_players else 1
-
-                boss_with_stats = MonsterGenerator.create_boss(boss_id, avg_level_index, self.config_manager)
-                if not boss_with_stats:
-                    logger.error(f"无法为Boss ID {boss_id} 生成属性，请检查配置。")
+            cooldown_minutes = template.get("cooldown_minutes", 1440)
+            cooldown_seconds = cooldown_minutes * 60
+            
+            if boss_id in active_boss_map:
+                instance = active_boss_map[boss_id]
+                if instance.current_hp <= 0:
+                    time_since_defeat = now - (getattr(instance, 'defeated_at', None) or instance.spawned_at)
+                    if time_since_defeat >= cooldown_seconds:
+                        await self.db.clear_boss_data(boss_id)
+                        del active_boss_map[boss_id]
+                        logger.info(f"Boss {template['name']} 冷却时间已过，准备重新生成...")
+                    else:
+                        remaining = int((cooldown_seconds - time_since_defeat) / 60)
+                        logger.debug(f"Boss {template['name']} 仍在冷却中，剩余 {remaining} 分钟")
+                        continue
+                else:
                     continue
+            else:
+                last_defeat_time = await self.db.get_last_boss_defeat_time(boss_id)
+                if last_defeat_time:
+                    time_since_defeat = now - last_defeat_time
+                    if time_since_defeat < cooldown_seconds:
+                        remaining = int((cooldown_seconds - time_since_defeat) / 60)
+                        logger.debug(f"Boss {template['name']} 仍在冷却中（从击杀记录），剩余 {remaining} 分钟")
+                        continue
+            
+            logger.info(f"世界Boss {template['name']} (ID: {boss_id}) 当前未激活，开始生成...")
 
-                new_boss_instance = ActiveWorldBoss(
-                    boss_id=boss_id,
-                    current_hp=boss_with_stats.max_hp,
-                    max_hp=boss_with_stats.max_hp,
-                    spawned_at=time.time(),
-                    level_index=avg_level_index
-                )
-                await self.db.create_active_boss(new_boss_instance)
-                active_boss_map[boss_id] = new_boss_instance
+            avg_level_index = int(sum(p.level_index for p in top_players) / len(top_players)) if top_players else 1
+
+            boss_with_stats = MonsterGenerator.create_boss(boss_id, avg_level_index, self.config_manager, difficulty_multiplier)
+            if not boss_with_stats:
+                logger.error(f"无法为Boss ID {boss_id} 生成属性，请检查配置。")
+                continue
+
+            new_boss_instance = ActiveWorldBoss(
+                boss_id=boss_id,
+                current_hp=boss_with_stats.max_hp,
+                max_hp=boss_with_stats.max_hp,
+                spawned_at=time.time(),
+                level_index=avg_level_index
+            )
+            await self.db.create_active_boss(new_boss_instance)
+            active_boss_map[boss_id] = new_boss_instance
 
         result = []
+        difficulty_multiplier = self.config["VALUES"].get("WORLD_BOSS_DIFFICULTY_MULTIPLIER", 3.0)
         for boss_id, active_instance in active_boss_map.items():
-            boss_template = MonsterGenerator.create_boss(boss_id, active_instance.level_index, self.config_manager)
-            if boss_template:
-                result.append((active_instance, boss_template))
+            if active_instance.current_hp > 0:
+                boss_template = MonsterGenerator.create_boss(boss_id, active_instance.level_index, self.config_manager, difficulty_multiplier)
+                if boss_template:
+                    result.append((active_instance, boss_template))
         return result
 
     async def player_fight_boss(self, player: Player, boss_id: str, player_name: str) -> str:
@@ -183,7 +216,18 @@ class BattleManager:
         if not active_boss_instance or active_boss_instance.current_hp <= 0:
             return f"来晚了一步，ID为【{boss_id}】的Boss已被击败或已消失！"
 
-        boss = MonsterGenerator.create_boss(boss_id, active_boss_instance.level_index, self.config_manager)
+        player_cooldown_minutes = self.config["VALUES"].get("WORLD_BOSS_PLAYER_COOLDOWN_MINUTES", 120)
+        last_attack = await self.db.get_player_last_boss_attack(boss_id, player.user_id)
+        if last_attack:
+            elapsed = time.time() - last_attack
+            remaining = player_cooldown_minutes * 60 - elapsed
+            if remaining > 0:
+                remaining_min = int(remaining / 60)
+                remaining_sec = int(remaining % 60)
+                return f"你太过疲惫，需要休息后才能再次讨伐此Boss！剩余冷却时间：{remaining_min}分{remaining_sec}秒"
+
+        difficulty_multiplier = self.config["VALUES"].get("WORLD_BOSS_DIFFICULTY_MULTIPLIER", 3.0)
+        boss = MonsterGenerator.create_boss(boss_id, active_boss_instance.level_index, self.config_manager, difficulty_multiplier)
         if not boss:
             return "错误：无法加载Boss战斗数据！"
 
@@ -242,23 +286,81 @@ class BattleManager:
         if not participants:
             await self.db.clear_boss_data(boss_instance.boss_id)
             return "但似乎无人对此Boss造成伤害，奖励无人获得。"
+        
         total_damage_dealt = sum(p['total_damage'] for p in participants) or 1
         reward_report = ["\n--- 战利品结算 ---"]
         updated_players = []
-        for p_data in participants:
+        
+        rank_bonus_gold = self.config["VALUES"].get("WORLD_BOSS_RANK_BONUS_GOLD", [2000, 1000, 500])
+        rank_bonus_exp = self.config["VALUES"].get("WORLD_BOSS_RANK_BONUS_EXP", [5000, 2500, 1000])
+        
+        item_rewards = boss_template.rewards.get('items', {})
+        
+        for rank, p_data in enumerate(participants):
             player_obj = await self.db.get_player_by_id(p_data['user_id'])
             if player_obj:
                 damage_contribution = p_data['total_damage'] / total_damage_dealt
                 gold_reward = int(boss_template.rewards['gold'] * damage_contribution)
                 exp_reward = int(boss_template.rewards['experience'] * damage_contribution)
-                player_obj.gold += gold_reward
-                player_obj.experience += exp_reward
+                
+                bonus_gold = 0
+                bonus_exp = 0
+                rank_title = ""
+                
+                if rank < len(rank_bonus_gold) or rank < len(rank_bonus_exp):
+                    bonus_gold = rank_bonus_gold[rank] if rank < len(rank_bonus_gold) else 0
+                    bonus_exp = rank_bonus_exp[rank] if rank < len(rank_bonus_exp) else 0
+                    rank_titles = ["🥇第一", "🥈第二", "🥉第三"]
+                    rank_title = rank_titles[rank] if rank < len(rank_titles) else ""
+                
+                total_gold = gold_reward + bonus_gold
+                total_exp = exp_reward + bonus_exp
+                player_obj.gold += total_gold
+                player_obj.experience += total_exp
                 updated_players.append(player_obj)
-                reward_report.append(f"道友 {p_data['user_name']} 获得灵石 {gold_reward}，修为 {exp_reward}！")
+                
+                reward_text = f"道友 {p_data['user_name']} 获得灵石 {total_gold}，修为 {total_exp}"
+                if rank_title:
+                    reward_text = f"{rank_title} {reward_text}（含排名奖励）"
+                reward_report.append(reward_text)
+                
+                if rank == 0 and item_rewards:
+                    await self.db.add_items_to_inventory_in_transaction(player_obj.user_id, item_rewards)
+                    item_names = []
+                    for item_id, qty in item_rewards.items():
+                        item_info = self.config_manager.item_data.get(item_id, {})
+                        item_name = item_info.get("name", f"物品{item_id}")
+                        item_names.append(f"{item_name}x{qty}")
+                    if item_names:
+                        reward_report.append(f"  🎁 首功奖励: {', '.join(item_names)}")
+        
         if updated_players:
             await self.db.update_players_in_transaction(updated_players)
+        
+        top_contributors = [{"user_name": p["user_name"], "damage": p["total_damage"]} for p in participants[:5]]
+        await self.db.log_boss_kill(boss_instance.boss_id, boss_template.name, top_contributors)
+        
         await self.db.clear_boss_data(boss_instance.boss_id)
+        
+        cooldown_minutes = boss_template.cooldown_minutes
+        cooldown_hours = cooldown_minutes // 60
+        reward_report.append(f"\n⏰ 此Boss将在 {cooldown_hours} 小时后重新刷新")
+        
+        if self._broadcast_callback:
+            broadcast_msg = self._build_broadcast_message(boss_template.name, top_contributors, cooldown_hours)
+            await self._broadcast_callback(broadcast_msg)
+        
         return "\n".join(reward_report)
+
+    def _build_broadcast_message(self, boss_name: str, top_contributors: list, cooldown_hours: int) -> str:
+        lines = [f"📢 世界Boss【{boss_name}】已被击杀！", ""]
+        lines.append("🏆 功勋榜：")
+        rank_icons = ["🥇", "🥈", "🥉", "4.", "5."]
+        for i, c in enumerate(top_contributors[:5]):
+            icon = rank_icons[i] if i < len(rank_icons) else f"{i+1}."
+            lines.append(f"  {icon} {c['user_name']} - {c['damage']}伤害")
+        lines.append(f"\n⏰ Boss将在 {cooldown_hours} 小时后重新刷新")
+        return "\n".join(lines)
 
     def player_vs_monster(self, player: Player, monster) -> Tuple[bool, List[str], Player]:
         p_clone = player.clone()

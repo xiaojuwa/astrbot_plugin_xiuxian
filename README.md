@@ -1,9 +1,9 @@
 # AstrBot 文字修仙插件
 
 <p align="center">
-  <img src="https://img.shields.io/badge/版本-v2.7.0-blue" alt="Version">
+  <img src="https://img.shields.io/badge/版本-v2.8.0-blue" alt="Version">
   <img src="https://img.shields.io/badge/框架-AstrBot-green" alt="Framework">
-  <img src="https://img.shields.io/badge/数据库版本-v22-orange" alt="DB Version">
+  <img src="https://img.shields.io/badge/数据库版本-v23-orange" alt="DB Version">
   <img src="https://img.shields.io/badge/许可证-AGPL--3.0-red" alt="License">
 </p>
 
@@ -108,7 +108,8 @@
 | `切磋 @某人` | 与其他玩家切磋（需双方满血） |
 | `奇斗 @某人 <灵石>` | 带灵石赌注的PVP（胜者赢得灵石） |
 | `查看世界boss` | 查看当前活跃的世界Boss |
-| `讨伐boss <Boss ID>` | 挑战世界Boss |
+| `讨伐boss <Boss ID>` | 挑战世界Boss（有冷却时间） |
+| `boss战报` | 查看近期Boss击杀战报 |
 | `探索秘境 [类型] [难度]` | 进入秘境探索（可选择类型和难度） |
 | `前进` | 在秘境中前进一层 |
 | `选择 <数字>` | 在秘境事件中做出选择 |
@@ -684,7 +685,7 @@ astrbot_plugin_xiuxian/
 ## 数据库
 
 - **存储引擎**：SQLite (aiosqlite异步)
-- **数据库版本**：v17
+- **数据库版本**：v23
 - **存储位置**：`AstrBot/data/xiuxian/xiuxian_data.db`
 - **自动迁移**：插件升级时自动执行数据库迁移
 
@@ -692,7 +693,40 @@ astrbot_plugin_xiuxian/
 
 ## 更新日志
 
-### v2.7.1 (最新) - 宗门建筑系统
+### v2.8.0 (最新) - 世界Boss系统增强
+
+**⚔️ Boss系统全面升级**：
+- **Boss冷却生效**：Boss被击杀后根据配置冷却时间重新生成，不再立即刷新
+- **玩家攻击冷却**：每位玩家对同一Boss有攻击冷却（默认2小时），防止独吞
+- **难度大幅提升**：Boss基础属性翻倍，新增难度系数配置（默认3倍）
+
+**🏆 奖励系统改进**：
+- **物品奖励发放**：首功玩家获得Boss掉落的物品奖励
+- **伤害排名额外奖励**：前三名获得额外灵石和经验（🥇🥈🥉标识）
+- **奖励更丰厚**：灵石和经验基础值提升60%
+
+**📜 Boss战报系统**：
+- 新增 `boss战报` 指令查看近期10条击杀记录
+- 记录击杀时间和功勋榜前三
+- Boss击杀后自动推送战报到指定群
+
+**🎮 新增指令**：
+- `boss战报` - 查看近期Boss击杀战报
+
+**⚙️ 新增配置项**：
+- `WORLD_BOSS_PLAYER_COOLDOWN_MINUTES`：玩家攻击冷却（默认120分钟）
+- `WORLD_BOSS_DIFFICULTY_MULTIPLIER`：Boss难度系数（默认3.0）
+- `WORLD_BOSS_RANK_BONUS_GOLD`：排名额外灵石奖励
+- `WORLD_BOSS_RANK_BONUS_EXP`：排名额外经验奖励
+- `WORLD_BOSS_BROADCAST_GROUP`：Boss击杀战报推送群号
+
+**📦 数据库更新**：
+- 数据库版本：v22 → v23
+- 新增 `world_boss_kill_logs` 表（击杀记录）
+- `active_world_bosses` 新增 `defeated_at` 字段
+- `world_boss_participants` 新增 `last_attack_at` 字段
+
+### v2.7.1 - 宗门建筑系统
 
 **🏛️ 宗门建筑上线**：
 - 藏经阁：全员修炼速度加成 (+15%~35%)
